@@ -109,7 +109,7 @@ class BaseApplication:
             if isinstance(body, bytes):
                 headers.setdefault("content-length", str(len(body)))
             try:
-                raw_headers = [(k.encode(), v.encode()) for k, v in headers.items()]
+                rawheaders = [(k.encode(), v.encode()) for k, v in headers.items()]
             except Exception:
                 raise ValueError("Header keys and values must all be strings.")
 
@@ -121,16 +121,10 @@ class BaseApplication:
             raise err
 
         # === Send response
-
+        start = {"type": "http.response.start", "status": status, "headers": rawheaders}
         if isinstance(body, bytes):
             # The easy way; body as one message, not much error catching we can do here.
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": status,
-                    "headers": raw_headers,
-                }
-            )
+            await send(start)
             if isinstance(body, bytes):
                 await send({"type": "http.response.body", "body": body})
         else:
@@ -145,13 +139,7 @@ class BaseApplication:
                     ), f"Body chunk must be str or bytes, not {type(chunk)}"
                     if not start_is_sent:
                         start_is_sent = True
-                        await send(
-                            {
-                                "type": "http.response.start",
-                                "status": status,
-                                "headers": raw_headers,
-                            }
-                        )
+                        await send(start)
                     await send(
                         {"type": "http.response.body", "body": chunk, "more_body": True}
                     )
