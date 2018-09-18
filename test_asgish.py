@@ -4,14 +4,13 @@ import json
 import time
 import signal
 import logging
-import asyncio
 import tempfile
 import multiprocessing
 
 import requests
 import pytest
 
-from asgish import Request, handler2asgi
+from asgish import handler2asgi
 
 port = 8888
 url = f"http://localhost:{port}"
