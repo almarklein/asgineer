@@ -1,6 +1,9 @@
 # asgish
 An ASGI web framework with an ASGI-ish API
 
+[![Build Status](https://api.travis-ci.org/almarklein/asgish.svg)](https://travis-ci.org/almarklein/asgish)
+
+
 ## Introduction
 
 Asgish is a Python ASGI web microframework that tries to add as few
