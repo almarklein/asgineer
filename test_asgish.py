@@ -29,6 +29,7 @@ def run(handler, queues=None, backend="uvicorn"):
             while True:
                 x = queues[0].get()
                 if x == "STOP1":
+                    time.sleep(0.2)
                     queues[1].put("END")
                 elif x == "STOP2":
                     thread.interrupt_main()
