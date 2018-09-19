@@ -4,7 +4,7 @@ An ASGI web framework with an ASGI-ish API
 ## Introduction
 
 Asgish is a Python ASGI web microframework that tries to add as few
-abstractions as possible, while still offering a friendly API. We don't
+abstractions as possible, while still offering a friendly API. It does not
 do fancy routing; it's async handlers all the way down.
 
 The [ASGI](https://asgi.readthedocs.io) specification allows async web

@@ -1,0 +1,83 @@
+"""
+asgish setup script.
+"""
+
+import os
+import sys
+import shutil
+
+try:
+    import setuptools  # noqa, analysis:ignore
+except ImportError:
+    pass  # setuptools allows for "develop", but it's not essential
+
+from distutils.core import setup
+
+
+## Function we need
+
+
+def get_version_and_doc(filename):
+    NS = dict(__version__="", __doc__="")
+    docStatus = 0  # Not started, in progress, done
+    for line in open(filename, "rb").read().decode().splitlines():
+        if line.startswith("__version__"):
+            exec(line.strip(), NS, NS)
+        elif line.startswith('"""'):
+            if docStatus == 0:
+                docStatus = 1
+                line = line.lstrip('"')
+            elif docStatus == 1:
+                docStatus = 2
+        if docStatus == 1:
+            NS["__doc__"] += line.rstrip() + "\n"
+    if not NS["__version__"]:
+        raise RuntimeError("Could not find __version__")
+    return NS["__version__"], NS["__doc__"]
+
+
+## Collect info for setup()
+
+THIS_DIR = os.path.dirname(__file__)
+
+# Define name and description
+name = "asgish"
+description = "An ASGI web framework with an ASGI-ish API"
+
+# Get version and docstring (i.e. long description)
+version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish.py"))
+doc = ""
+
+
+## Setup
+
+setup(
+    name=name,
+    version=version,
+    author="Almar Klein",
+    author_email="almar.klein@gmail.com",
+    license="(new) BSD",
+    url="https://github.com/almarklein/asgish",
+    download_url="https://pypi.org/project/asgish/",
+    keywords="ASGI web framework",
+    description=description,
+    # long_description=doc,
+    platforms="any",
+    provides=[name],
+    python_requires=">=3.6",
+    install_requires=[],
+    py_modules=["asgish"],
+    # entry_points={'console_scripts': ['asgi = asgi:cli'], },
+    zip_safe=False,
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Topic :: Internet :: WWW/HTTP",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+    ],
+)

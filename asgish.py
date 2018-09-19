@@ -7,6 +7,9 @@ import inspect
 from urllib.parse import parse_qsl  # urlparse, unquote
 
 
+__version__ = "0.1.1"
+
+
 def handler2asgi(handler):
     """ Convert a request handler (a coroutine function) to an ASGI
     application, which can be served with an ASGI server, such as
