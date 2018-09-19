@@ -180,14 +180,15 @@ class Request:
 
     @property
     def scope(self):
-        """ A dict representing the raw ASGI scope. See
-        https://github.com/django/asgiref/blob/master/specs/www.rst for details.
+        """ A dict representing the raw ASGI scope. See the
+        [ASGI reference](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope)
+        for details.
         """
         return self._scope
 
     @property
     def method(self):
-        """ The HTTP method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
+        """ The HTTP method (string). E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
         """
         return self._scope["method"]
 
@@ -204,7 +205,7 @@ class Request:
     @property
     def url(self):
         """ The full (unquoted) url, composed of scheme, host, port,
-        path, and query parameters.
+        path, and query parameters (string).
         """
         url = f"{self.scheme}://{self.host}:{self.port}{self.path}"
         if self.querylist:
@@ -213,25 +214,26 @@ class Request:
 
     @property
     def scheme(self):
-        """ The scheme. (likely 'http' or 'https').
+        """ The URL scheme (string). E.g. 'http' or 'https'.
         """
         return self._scope["scheme"]
 
     @property
     def host(self):
-        """ The server's host name. See also scope['server'] and scope['client'].
+        """ The server's host name (string).
+        See also ``scope['server']`` and ``scope['client']``.
         """
         return self._scope["server"][0]
 
     @property
     def port(self):
-        """ The server's port.
+        """ The server's port (integer).
         """
         return self._scope["server"][1]
 
     @property
     def path(self):
-        """ The path part of the URL (with percent escapes decoded).
+        """ The path part of the URL (a string, with percent escapes decoded).
         """
         return (
             self._scope.get("root_path", "") + self._scope["path"]
@@ -268,8 +270,9 @@ class Request:
                 raise IOError("Client disconnected")
 
     async def get_body(self, limit=10 * 2 ** 20):
-        """ Get the bytes of the body. If the end of the stream is not
-        reached before the byte limit is reached, raises an IOError.
+        """ Coroutine to get the bytes of the body.
+        If the end of the stream is not reached before the byte limit
+        is reached (default 10MiB), raises an IOError.
         """
         if self._body is None:
             nbytes = 0
@@ -284,8 +287,9 @@ class Request:
         return self._body
 
     async def get_json(self, limit=10 * 2 ** 20):
-        """ Get the body as a dict. If the end of the stream is not
-        reached before the byte limit is reached, raises an IOError.
+        """ Coroutine to get the body as a dict.
+        If the end of the stream is not reached before the byte limit
+        is reached (default 10MiB), raises an IOError.
         """
         body = await self.get_body(limit)
         return json.loads(body.decode())

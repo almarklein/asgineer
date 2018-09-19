@@ -11,7 +11,7 @@ def get_request_docs():
     """
     parts = []
 
-    for ob in (asgish.Request,):
+    for ob in (asgish.Request, asgish.handler2asgi):
 
         sig = str(inspect.signature(ob))
         if isinstance(ob, type):
@@ -36,7 +36,7 @@ def get_request_docs():
                     )
             # parts.append('##')
         else:
-            parts.append("**``{}{}``** - {}".format(ob.__name__, sig, get_doc(ob, 4)))
+            parts.append("### function ``{}{}``\n\n{}".format(ob.__name__, sig, get_doc(ob, 4)))
 
     return "\n".join(parts)
 
@@ -64,10 +64,10 @@ def main():
     for line in text.splitlines():
         if not skip:
             lines.append(line)
-            if line.startswith("<!-- begin Request docs -->"):
+            if line.startswith("<!-- begin docs -->"):
                 skip = True
                 lines.extend(docs.splitlines())
-        elif line.startswith("<!-- end Request docs -->"):
+        elif line.startswith("<!-- end docs -->"):
             lines.append(line)
             skip = False
 

@@ -82,31 +82,33 @@ async def handler(request):
 ```
 
 
-## The request object
+## API reference
 
-<!-- begin Request docs -->
+<!-- begin docs -->
 ### class ``Request(scope, receive)``
 
 Representation of an HTTP request. An object of this class is
 passed to the request handler.
 
-**``Request.scope``** - A dict representing the raw ASGI scope. See
-https://github.com/django/asgiref/blob/master/specs/www.rst for details.
+**``Request.scope``** - A dict representing the raw ASGI scope. See the
+[ASGI reference](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope)
+for details.
 
-**``Request.method``** - The HTTP method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
+**``Request.method``** - The HTTP method (string). E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
 
 **``Request.headers``** - A dictionary representing the headers. Both keys and values are strings.
 
 **``Request.url``** - The full (unquoted) url, composed of scheme, host, port,
-path, and query parameters.
+path, and query parameters (string).
 
-**``Request.scheme``** - The scheme. (likely 'http' or 'https').
+**``Request.scheme``** - The URL scheme (string). E.g. 'http' or 'https'.
 
-**``Request.host``** - The server's host name. See also scope['server'] and scope['client'].
+**``Request.host``** - The server's host name (string).
+See also ``scope['server']`` and ``scope['client']``.
 
-**``Request.port``** - The server's port.
+**``Request.port``** - The server's port (integer).
 
-**``Request.path``** - The path part of the URL (with percent escapes decoded).
+**``Request.path``** - The path part of the URL (a string, with percent escapes decoded).
 
 **``Request.querylist``** - A list with (key, value) tuples, representing the URL query parameters.
 
@@ -114,12 +116,20 @@ path, and query parameters.
 
 **``Request.iter_body()``** - An async generator that iterates over the chunks in the body.
 
-**``Request.get_body(limit=10485760)``** - Get the bytes of the body. If the end of the stream is not
-reached before the byte limit is reached, raises an IOError.
+**``Request.get_body(limit=10485760)``** - Coroutine to get the bytes of the body.
+If the end of the stream is not reached before the byte limit
+is reached (default 10MiB), raises an IOError.
 
-**``Request.get_json(limit=10485760)``** - Get the body as a dict. If the end of the stream is not
-reached before the byte limit is reached, raises an IOError.
-<!-- end Request docs -->
+**``Request.get_json(limit=10485760)``** - Coroutine to get the body as a dict.
+If the end of the stream is not reached before the byte limit
+is reached (default 10MiB), raises an IOError.
+
+### function ``handler2asgi(handler)``
+
+Convert a request handler (a coroutine function) to an ASGI
+application, which can be served with an ASGI server, such as
+Uvicorn, Hypercorn, Daphne, etc.
+<!-- end docs -->
 
 
 ## Installation and dependencies
