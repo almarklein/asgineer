@@ -85,9 +85,9 @@ class ServerProcess:
         # Force it to stop as needed
         for i in range(10):
             etime = time.time() + 0.5
-            while self._p.returncode is None and time.time() < etime:
+            while self._p.poll() is None and time.time() < etime:
                 time.sleep(0.01)
-            if self._p.returncode is not None:
+            if self._p.poll() is not None:
                 break
             self._p.terminate()
         else:
