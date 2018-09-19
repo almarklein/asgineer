@@ -19,7 +19,7 @@ an [ASGI application class](https://asgi.readthedocs.io/en/latest/specs/main.htm
 is just too awkward, so I created this minimal layer on top.
 
 When running asgish on [uvicorn](https://github.com/encode/uvicorn),
-it is one of the fastest web frameworks avaialble (it should be faster than Sanic).
+it is one of the fastest web frameworks available (it should be faster than Sanic).
 
 Other ASGI frameworks include [Starlette](https://github.com/encode/starlette), [Quart](https://github.com/pgjones/quart),
 and [others](https://asgi.readthedocs.io/en/latest/implementations.html#application-frameworks).
