@@ -2,11 +2,8 @@ import os
 import sys
 import json
 import time
-import queue
-import signal
-import logging
-import tempfile
-import multiprocessing
+import inspect
+import subprocess
 
 import requests
 import pytest
@@ -17,41 +14,39 @@ port = 8888
 url = f"http://localhost:{port}"
 
 
-def run(handler, queues=None, backend="uvicorn"):
-    """ Function that gets called in subprocess.
-    """
-    if queues:
-        sys.stdout.write = sys.stderr.write = queues[1].put
-        import threading
-        import _thread as thread
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-        def listen():
-            while True:
-                if queues[0].get() == "STOP":
-                    thread.interrupt_main()
-                    break
+SERVER_CODE = {
+    "hypercorn": f"""
+import hypercorn
+config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port={port}))
+config.error_logger = logging.getLogger("hypercorn.error")
+config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
+config.error_logger.setLevel(logging.INFO)
+run = lambda app: hypercorn.run_single(app, config)
+""",
+    "uvicorn": f"""
+import uvicorn
+run = lambda app: uvicorn.run(app, host="127.0.0.1", port={port}, log_level="warning")
+""",
+}
 
-        threading.Thread(target=listen).start()
+START_CODE = """
+import sys
+import threading
+import _thread
+def closer():
+    while sys.stdin.readline():
+        pass
+    _thread.interrupt_main()
+threading.Thread(target=closer).start()
 
-    app = handler2asgi(handler)
-
-    if backend.lower() == "hypercorn":
-        import hypercorn
-
-        config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port=port))
-        config.error_logger = logging.getLogger("hypercorn.error")
-        config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
-        config.error_logger.setLevel(logging.INFO)
-        queues[1].put("START") if queues else None
-        hypercorn.run_single(app, config)
-    elif backend.lower() == "uvicorn":
-        import uvicorn
-
-        queues[1].put("START") if queues else None
-        uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
-
-    if queues:
-        queues[1].put("END")
+sys.stdout.write("START\\n")
+sys.stdout.flush()
+run(app)
+sys.stdout.flush()
+sys.exit(0)
+"""
 
 
 class ServerProcess:
@@ -59,51 +54,47 @@ class ServerProcess:
     """
 
     def __init__(self, handler):
-        self._handler = handler
+        self._handler_code = inspect.getsource(handler)
+        self._handler_code += "\nfrom asgish import handler2asgi\n"
+        self._handler_code += f"\napp = handler2asgi({handler.__name__})\n"
         self.out = ""
 
     def __enter__(self):
-        # Prepare
+        # Prepare code and command
         backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
-        assert backend in ("uvicorn", "hypercorn")
-        self._q1, self._q2 = multiprocessing.Queue(), multiprocessing.Queue()
+        server_code = SERVER_CODE[backend]  # fails if invalid backend is given
+        cmd = [sys.executable, "-c", self._handler_code + server_code + START_CODE]
         # Start subprocess
-        self._p = multiprocessing.Process(
-            target=run, args=(self._handler, (self._q1, self._q2), backend)
+        self._p = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=THIS_DIR,
         )
-        self._p.start()
-        # Wait for the process to get started, then wait a wee bit more
-        while self._q2.get() != "START":
-            pass
+        # Wait for process to start, then wait a bit more, to be sure the server is up
+        while self._p.stdout.readline().decode().strip() != "START":
+            time.sleep(0.01)
         time.sleep(0.2)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Ask it to send END, so we know we've got all messages
-        self._q1.put("STOP")
+        # Ask process to stop
+        self._p.stdin.close()
 
-        # Get output streams from queue
-        lines = []
-        while True:
-            try:
-                x = self._q2.get(timeout=1.0)
-                if x == "END":
-                    break
-                else:
-                    lines.append(x)
-            except queue.Empty:
+        # Force it to stop as needed
+        for i in range(10):
+            etime = time.time() + 0.5
+            while self._p.returncode is None and time.time() < etime:
+                time.sleep(0.01)
+            if self._p.returncode is not None:
                 break
-        self.out = "".join(lines)
-
-        # Ensure shutdown
-        etime = time.time() + 1.0
-        while time.time() < etime:
-            time.sleep(0.01)
-            if not self._p.is_alive():
-                break
-        else:
             self._p.terminate()
-            raise RuntimeError("Had to kill server process")
+        else:
+            raise RuntimeError("Runaway server process failed to terminate!")
+
+        # Get output
+        self.out = self._p.stdout.read().decode()
 
 
 def test_backend_reporter(capsys=None):
@@ -126,10 +117,19 @@ async def handler1(request):
 
 
 async def handler2(request):
+    async def handler1(request):
+        return 200, {"xx-foo": "x"}, "hi!"
+
     return await handler1(request)
 
 
 async def handler3(request):
+    async def handler1(request):
+        return 200, {"xx-foo": "x"}, "hi!"
+
+    async def handler2(request):
+        return await handler1(request)
+
     return await handler2(request)
 
 
