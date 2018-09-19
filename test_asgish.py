@@ -17,19 +17,19 @@ port = 8888
 url = f"http://localhost:{port}"
 
 
-def run(handler, queue=None, backend="uvicorn"):
+def run(handler, queues=None, backend="uvicorn"):
     """ Function that gets called in subprocess.
     """
-    if queue:
-        sys.stdout.write = sys.stderr.write = queue.put
+    if queues:
+        sys.stdout.write = sys.stderr.write = queues[1].put
         import threading
         import _thread as thread
 
         def listen():
             while True:
-                x = queue.get()
+                x = queues[0].get()
                 if x == "STOP1":
-                    queue.put("END")
+                    queues[1].put("END")
                 elif x == "STOP2":
                     thread.interrupt_main()
                     break
@@ -45,12 +45,12 @@ def run(handler, queue=None, backend="uvicorn"):
         config.error_logger = logging.getLogger("hypercorn.error")
         config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
         config.error_logger.setLevel(logging.INFO)
-        queue.put("START") if queue else None
+        queues[1].put("START") if queues else None
         hypercorn.run_single(app, config)
     elif backend.lower() == "uvicorn":
         import uvicorn
 
-        queue.put("START") if queue else None
+        queues[1].put("START") if queues else None
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
@@ -66,29 +66,29 @@ class ServerProcess:
         # Prepare
         backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
         assert backend in ("uvicorn", "hypercorn")
-        self._q = multiprocessing.Queue()
+        self._q1, self._q2 = multiprocessing.Queue(), multiprocessing.Queue()
         # Start subprocess
         self._p = multiprocessing.Process(
-            target=run, args=(self._handler, self._q, backend)
+            target=run, args=(self._handler, (self._q1, self._q2), backend)
         )
         self._p.start()
         # Wait for the process to get started, then wait a wee bit more
-        while self._q.get() != "START":
+        while self._q2.get() != "START":
             pass
         time.sleep(0.2)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Ask it to send END, so we know we've got all messages
-        self._q.put("STOP1")
+        self._q1.put("STOP1")
 
         # Get output streams from queue
         lines = []
         while True:
             try:
-                x = self._q.get(timeout=2)
+                x = self._q2.get(timeout=1.0)
                 if x == "END":
-                    self._q.put("STOP2")
+                    self._q1.put("STOP2")
                     break
                 else:
                     lines.append(x)
@@ -97,7 +97,7 @@ class ServerProcess:
         self.out = "".join(lines)
 
         # Ensure shutdown
-        etime = time.time() + 3.0
+        etime = time.time() + 1.0
         while time.time() < etime:
             time.sleep(0.01)
             if not self._p.is_alive():
