@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import queue
 import signal
 import logging
 import tempfile
@@ -16,31 +17,36 @@ port = 8888
 url = f"http://localhost:{port}"
 
 
-def streamfilename(pid, suffix="stdout"):
-    return os.path.join(tempfile.gettempdir(), f"asgish{pid}.{suffix}")
-
-
-def run(handler, redirect_streams=False, backend="uvicorn"):
+def run(handler, queue=None, backend="uvicorn"):
     """ Function that gets called in subprocess.
     """
-    with open(streamfilename(os.getpid()), "wt") as f:
-        if redirect_streams:
-            sys.stdout = sys.stderr = f
+    if queue:
+        sys.stdout.write = sys.stderr.write = queue.put
+        import threading
+        import _thread as thread
 
-        app = handler2asgi(handler)
+        def listen():
+            if queue.get() == "STOP":
+                thread.interrupt_main()
 
-        if backend.lower() == "hypercorn":
-            import hypercorn
+        threading.Thread(target=listen).start()
 
-            config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port=port))
-            config.error_logger = logging.getLogger("hypercorn.error")
-            config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
-            config.error_logger.setLevel(logging.INFO)
-            hypercorn.run_single(app, config)
-        elif backend.lower() == "uvicorn":
-            import uvicorn
+    app = handler2asgi(handler)
 
-            uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+    if backend.lower() == "hypercorn":
+        import hypercorn
+
+        config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port=port))
+        config.error_logger = logging.getLogger("hypercorn.error")
+        config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
+        config.error_logger.setLevel(logging.INFO)
+        queue.put("START") if queue else None
+        hypercorn.run_single(app, config)
+    elif backend.lower() == "uvicorn":
+        import uvicorn
+
+        queue.put("START") if queue else None
+        uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
 class ServerProcess:
@@ -52,22 +58,36 @@ class ServerProcess:
         self.out = ""
 
     def __enter__(self):
+        # Prepare
         backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
         assert backend in ("uvicorn", "hypercorn")
+        self._q = multiprocessing.Queue()
+        # Start subprocess
         self._p = multiprocessing.Process(
-            target=run, args=(self._handler, True, backend)
+            target=run, args=(self._handler, self._q, backend)
         )
         self._p.start()
+        # Wait for the process to get started, then wait a wee bit more
+        while self._q.get() != "START":
+            pass
+        time.sleep(0.02)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Try stopping it friendly, otherwise less friendly
-        time.sleep(0.2)  # give time to flush buffers
-        try:
-            os.kill(self._p.pid, signal.SIGINT)
-        except OSError:
-            pass
-        etime = time.time() + 2
+        # Ask it to stop
+        self._q.put("STOP")
+
+        # Get output streams from queue
+        lines = []
+        while True:
+            try:
+                lines.append(self._q.get(timeout=2))
+            except queue.Empty:
+                break
+        self.out = "".join(lines)
+
+        # Ensure shutdown
+        etime = time.time() + 1.0
         while time.time() < etime:
             time.sleep(0.01)
             if not self._p.is_alive():
@@ -75,17 +95,6 @@ class ServerProcess:
         else:
             self._p.terminate()
             raise RuntimeError("Had to kill server process")
-
-        # Get out and err stream of the process, but only if there were not errors in the context
-        if not exc_value:
-            with open(streamfilename(self._p.pid), "rt") as f:
-                self.out = f.read()
-
-        # Clean up temp file
-        try:
-            os.remove(streamfilename(self._p.pid))
-        except Exception:
-            pass
 
 
 def test_backend_reporter(capsys=None):
