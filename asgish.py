@@ -155,7 +155,8 @@ class BaseApplication:
 
 
 class Request:
-    """ Representation of an HTTP request.
+    """ Representation of an HTTP request. An object of this class is
+    passed to the request handler.
     """
 
     __slots__ = (
@@ -186,7 +187,7 @@ class Request:
 
     @property
     def method(self):
-        """ The http method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
+        """ The HTTP method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
         """
         return self._scope["method"]
 

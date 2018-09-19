@@ -10,7 +10,6 @@ do fancy routing; it's async handlers all the way down.
 The [ASGI](https://asgi.readthedocs.io) specification allows async web
 servers and frameworks to talk to each-other in a standardized way.
 Like WSGI, but for async.
-
 I like getting to the metal, but writing web applications using
 an [ASGI application class](https://asgi.readthedocs.io/en/latest/specs/main.html#applications)
 is just too awkward, so I created this minimal layer on top.
@@ -23,7 +22,6 @@ and [others](https://asgi.readthedocs.io/en/latest/implementations.html#applicat
 
 ```py
 # example.py
-
 from asgish import handler2asgi
 
 @handler2asgi
@@ -66,7 +64,7 @@ return {}, 'hello'
 return 'hello'
 ```
 
-The body of an http response is always binary. In asgish the body can be:
+The body of an HTTP response is always binary. In asgish the body can be:
     
 * `bytes`: is passed unchanged.
 * `str`: is encoded and the `content-type` header is set to `text/plain`.
@@ -89,77 +87,38 @@ async def handler(request):
 <!-- begin Request docs -->
 ### class ``Request(scope, receive)``
 
-Representation of an HTTP request.
+Representation of an HTTP request. An object of this class is
+passed to the request handler.
 
-
-#### property ``scope`
-
-A dict representing the raw ASGI scope. See
+**``Request.scope``** - A dict representing the raw ASGI scope. See
 https://github.com/django/asgiref/blob/master/specs/www.rst for details.
 
+**``Request.method``** - The HTTP method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
 
-#### property ``method`
+**``Request.headers``** - A dictionary representing the headers. Both keys and values are strings.
 
-The http method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
-
-
-#### property ``headers`
-
-A dictionary representing the headers. Both keys and values are strings.
-
-
-#### property ``url`
-
-The full (unquoted) url, composed of scheme, host, port,
+**``Request.url``** - The full (unquoted) url, composed of scheme, host, port,
 path, and query parameters.
 
+**``Request.scheme``** - The scheme. (likely 'http' or 'https').
 
-#### property ``scheme`
+**``Request.host``** - The server's host name. See also scope['server'] and scope['client'].
 
-The scheme. (likely 'http' or 'https').
+**``Request.port``** - The server's port.
 
+**``Request.path``** - The path part of the URL (with percent escapes decoded).
 
-#### property ``host`
+**``Request.querylist``** - A list with (key, value) tuples, representing the URL query parameters.
 
-The server's host name. See also scope['server'] and scope['client'].
+**``Request.querydict``** - A dictionary representing the URL query parameters.
 
+**``Request.iter_body()``** - An async generator that iterates over the chunks in the body.
 
-#### property ``port`
-
-The server's port.
-
-
-#### property ``path`
-
-The path part of the URL (with percent escapes decoded).
-
-
-#### property ``querylist`
-
-A list with (key, value) tuples, representing the URL query parameters.
-
-
-#### property ``querydict`
-
-A dictionary representing the URL query parameters.
-
-
-#### method ``iter_body()``
-
-An async generator that iterates over the chunks in the body.
-
-
-#### method ``get_body(limit=10485760)``
-
-Get the bytes of the body. If the end of the stream is not
+**``Request.get_body(limit=10485760)``** - Get the bytes of the body. If the end of the stream is not
 reached before the byte limit is reached, raises an IOError.
 
-
-#### method ``get_json(limit=10485760)``
-
-Get the body as a dict. If the end of the stream is not
+**``Request.get_json(limit=10485760)``** - Get the body as a dict. If the end of the stream is not
 reached before the byte limit is reached, raises an IOError.
-
 <!-- end Request docs -->
 
 
