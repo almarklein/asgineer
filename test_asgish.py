@@ -27,11 +27,7 @@ def run(handler, queues=None, backend="uvicorn"):
 
         def listen():
             while True:
-                x = queues[0].get()
-                if x == "STOP1":
-                    time.sleep(0.2)
-                    queues[1].put("END")
-                elif x == "STOP2":
+                if queues[0].get() == "STOP":
                     thread.interrupt_main()
                     break
 
@@ -53,6 +49,9 @@ def run(handler, queues=None, backend="uvicorn"):
 
         queues[1].put("START") if queues else None
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+
+    if queues:
+        queues[1].put("END")
 
 
 class ServerProcess:
@@ -81,7 +80,7 @@ class ServerProcess:
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Ask it to send END, so we know we've got all messages
-        self._q1.put("STOP1")
+        self._q1.put("STOP")
 
         # Get output streams from queue
         lines = []
@@ -89,7 +88,6 @@ class ServerProcess:
             try:
                 x = self._q2.get(timeout=1.0)
                 if x == "END":
-                    self._q1.put("STOP2")
                     break
                 else:
                     lines.append(x)
