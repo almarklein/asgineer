@@ -1,0 +1,41 @@
+# Travis CI configuration file for asgish
+# Validate this at http://lint.travis-ci.org/
+
+language: python
+
+# use container-based infrastructure
+# sudo : false
+
+# Trick to get 3.7 working for now
+# https://github.com/travis-ci/travis-ci/issues/9815#issuecomment-405506964
+dist: xenial
+sudo: true
+
+branches:
+  only:
+    - master
+
+matrix:
+    include:
+        - python: "3.6"
+        - python: "3.7"
+
+install:
+    - cd ${SRC_DIR}
+    - pip install uvicorn hypercorn;
+    - pip install pytest pytest-cov black pyflakes;
+    - python setup.py install;
+
+script: 
+    - cd ${SRC_DIR};
+    - python -c "import sys; print(sys.version, '\n', sys.prefix)"
+    - black --check .
+    - pyflakes .
+    - ASGISH_SERVER=uviorn pytest .
+    - ASGISH_SERVER=hypercorn pytest .
+
+after_success:
+    - echo SUCCESS!
+
+after_failure:
+    - echo FAIL!
