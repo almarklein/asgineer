@@ -16,33 +16,13 @@ port = 8888
 url = f"http://localhost:{port}"
 
 
-def show_async_checks():
-    import inspect
-
-    async def foo():
-        yield 3
-
-    async def bar():
-        return foo()
-
-    for func in (
-        inspect.iscoroutinefunction,
-        inspect.iscoroutine,
-        inspect.isasyncgenfunction,
-        inspect.isasyncgen,
-        inspect.isawaitable,
-    ):
-        print("==", func.__name__)
-        for ob in (foo, foo(), bar, bar()):
-            print(func(ob))
-
-
 def streamfilename(pid, suffix="stdout"):
     return os.path.join(tempfile.gettempdir(), f"asgish{pid}.{suffix}")
 
 
 def run(handler, redirect_streams=False, backend="uvicorn"):
-
+    """ Function that gets called in subprocess.
+    """
     with open(streamfilename(os.getpid()), "wt") as f:
         if redirect_streams:
             sys.stdout = sys.stderr = f
@@ -72,7 +52,8 @@ class ServerProcess:
         self.out = ""
 
     def __enter__(self):
-        backend = "uvicorn"
+        backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
+        assert backend in ("uvicorn", "hypercorn")
         self._p = multiprocessing.Process(
             target=run, args=(self._handler, True, backend)
         )
@@ -105,6 +86,18 @@ class ServerProcess:
             os.remove(streamfilename(self._p.pid))
         except Exception:
             pass
+
+
+def test_backend_reporter(capsys=None):
+    """ A stub test to display the used backend.
+    """
+    backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
+    msg = f"  Running tests with ASGI server: {backend}"
+    if capsys:
+        with capsys.disabled():
+            print(msg)
+    else:
+        print(msg)
 
 
 ## Test normal usage
@@ -511,13 +504,17 @@ def test_wrong_use():
 ##
 
 if __name__ == "__main__":
-    test_normal_usage()
-    test_request_object()
-    test_output_shapes()
-    test_chunking()
-    test_errors()
-    test_wrong_output()
-    test_wrong_use()
+    # Select backend with cli arg
+    for arg in sys.argv:
+        if arg.upper().startswith("--ASGISH_SERVER="):
+            os.environ["ASGISH_SERVER"] = arg.split("=")[1].strip().lower()
+
+    # Run all test functions
+    for func in list(globals().values()):
+        if callable(func) and func.__name__.startswith("test_"):
+            print(f"Running {func.__name__} ...")
+            func()
+    print("Done")
 
     # run(handler_err4)
 
