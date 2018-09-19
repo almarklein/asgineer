@@ -87,7 +87,78 @@ async def handler(request):
 ## The request object
 
 <!-- begin Request docs -->
+### class ``Request(scope, receive)``
 
+Representation of an HTTP request.
+
+
+#### property ``scope`
+
+A dict representing the raw ASGI scope. See
+https://github.com/django/asgiref/blob/master/specs/www.rst for details.
+
+
+#### property ``method`
+
+The http method. E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
+
+
+#### property ``headers`
+
+A dictionary representing the headers. Both keys and values are strings.
+
+
+#### property ``url`
+
+The full (unquoted) url, composed of scheme, host, port,
+path, and query parameters.
+
+
+#### property ``scheme`
+
+The scheme. (likely 'http' or 'https').
+
+
+#### property ``host`
+
+The server's host name. See also scope['server'] and scope['client'].
+
+
+#### property ``port`
+
+The server's port.
+
+
+#### property ``path`
+
+The path part of the URL (with percent escapes decoded).
+
+
+#### property ``querylist`
+
+A list with (key, value) tuples, representing the URL query parameters.
+
+
+#### property ``querydict`
+
+A dictionary representing the URL query parameters.
+
+
+#### method ``iter_body()``
+
+An async generator that iterates over the chunks in the body.
+
+
+#### method ``get_body(limit=10485760)``
+
+Get the bytes of the body. If the end of the stream is not
+reached before the byte limit is reached, raises an IOError.
+
+
+#### method ``get_json(limit=10485760)``
+
+Get the body as a dict. If the end of the stream is not
+reached before the byte limit is reached, raises an IOError.
 
 <!-- end Request docs -->
 
