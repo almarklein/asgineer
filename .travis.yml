@@ -34,8 +34,8 @@ script:
     - python -c "import sys; print(sys.version, '\n', sys.prefix)"
     - black --check .
     - pyflakes .
-    - ASGISH_SERVER=uvicorn pytest .
-    - ASGISH_SERVER=hypercorn pytest .
+    - ASGISH_SERVER=uvicorn pytest -v .
+    - ASGISH_SERVER=hypercorn pytest -v .
 
 after_success:
     - echo SUCCESS!
