@@ -26,8 +26,13 @@ def run(handler, queue=None, backend="uvicorn"):
         import _thread as thread
 
         def listen():
-            if queue.get() == "STOP":
-                thread.interrupt_main()
+            while True:
+                x = queue.get()
+                if x == "STOP1":
+                    queue.put("END")
+                elif x == "STOP2":
+                    thread.interrupt_main()
+                    break
 
         threading.Thread(target=listen).start()
 
@@ -70,24 +75,29 @@ class ServerProcess:
         # Wait for the process to get started, then wait a wee bit more
         while self._q.get() != "START":
             pass
-        time.sleep(0.02)
+        time.sleep(0.2)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Ask it to stop
-        self._q.put("STOP")
+        # Ask it to send END, so we know we've got all messages
+        self._q.put("STOP1")
 
         # Get output streams from queue
         lines = []
         while True:
             try:
-                lines.append(self._q.get(timeout=2))
+                x = self._q.get(timeout=2)
+                if x == "END":
+                    self._q.put("STOP2")
+                    break
+                else:
+                    lines.append(x)
             except queue.Empty:
                 break
         self.out = "".join(lines)
 
         # Ensure shutdown
-        etime = time.time() + 1.0
+        etime = time.time() + 3.0
         while time.time() < etime:
             time.sleep(0.01)
             if not self._p.is_alive():
