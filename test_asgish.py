@@ -18,6 +18,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SERVER_CODE = {
     "hypercorn": f"""
+import sys
+import logging
 import hypercorn
 config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port={port}))
 config.error_logger = logging.getLogger("hypercorn.error")
@@ -72,14 +74,23 @@ class ServerProcess:
             stderr=subprocess.STDOUT,
             cwd=THIS_DIR,
         )
-        # Wait for process to start, then wait a bit more, to be sure the server is up
-        while self._p.stdout.readline().decode().strip() != "START":
+        # Wait for process to start, and make sure it is not dead
+        while (
+            self._p.poll() is None
+            and self._p.stdout.readline().decode().strip() != "START"
+        ):
             time.sleep(0.01)
+        if self._p.poll() is not None:
+            raise RuntimeError(
+                "Process failed to start!\n" + self._p.stdout.read().decode()
+            )
+        # Then wait a bit more, to be sure the server is up
         time.sleep(0.2)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Ask process to stop
+        time.sleep(0.1)  # Give server time to recover (hypercorn seems to need that)
         self._p.stdin.close()
 
         # Force it to stop as needed
