@@ -46,7 +46,6 @@ description = "An ASGI web framework with an ASGI-ish API"
 
 # Get version and docstring (i.e. long description)
 version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish.py"))
-doc = ""
 
 
 ## Setup
@@ -61,7 +60,7 @@ setup(
     download_url="https://pypi.org/project/asgish/",
     keywords="ASGI web framework",
     description=description,
-    # long_description=doc,
+    long_description=doc,
     platforms="any",
     provides=[name],
     python_requires=">=3.6",

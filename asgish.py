@@ -1,5 +1,9 @@
 """
 asgish - An ASGI web framework with an ASGI-ish API
+
+Asgish is a tool to write asynchronous web applications, using as few
+abstractions as possible, while still offering a friendly API. It does not
+do fancy routing; it's async handlers all the way down.
 """
 
 import json
@@ -7,7 +11,7 @@ import inspect
 from urllib.parse import parse_qsl  # urlparse, unquote
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 def handler2asgi(handler):
