@@ -1,12 +1,28 @@
 # asgish
 An ASGI web framework with an ASGI-ish API
 
+## Introduction
 
-## A quick look
+Asgish is a Python ASGI web microframework that tries to add as few
+abstractions as possible, while still offering a friendly API. We don't
+do fancy routing; it's async handlers all the way down.
 
-Write a simple web application using minimal abstractions:
+The [ASGI](https://asgi.readthedocs.io) specification allows async web
+servers and frameworks to talk to each-other in a standardized way.
+Like WSGI, but for async.
+
+I like getting to the metal, but writing web applications using
+an [ASGI application class](https://asgi.readthedocs.io/en/latest/specs/main.html#applications)
+is just too awkward, so I created this minimal layer on top.
+
+Other ASGI frameworks include [Starlette](https://github.com/encode/starlette), [Quart](https://github.com/pgjones/quart),
+and [others](https://asgi.readthedocs.io/en/latest/implementations.html#application-frameworks).
+
+
+## A first look
 
 ```py
+# example.py
 
 from asgish import handler2asgi
 
@@ -16,7 +32,9 @@ async def main(request):
 
 ```
 
-Then run from the command line:
+## Running the application
+
+The above example can be run from the command line:
 ```
 $ uvicorn example.py:main
 ```
@@ -27,23 +45,18 @@ Some servers also allow running programatically. Just put this at the bottom of
 the same file:
 
 ```py
-...
-
 import uvicorn
 uvicorn.run(main)
 
 ```
 
-## Details
+## Returning the response
 
-With asgish you build your web application completely with async
-handlers. There is no smart routing or other fancy stuff. This means
-there is less to learn.
-
-Each http response really consists of three things, an integer
+With HTTP, a response really consists of three things: an integer
 [status code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes),
 a dictionary of [headers](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields),
-and the response body. In asgish you just return these three. You can also
+and the response [body](https://en.wikipedia.org/wiki/HTTP_message_body).
+In asgish you just return these three. You can also
 omit the status and/or headers. These are all equivalent:
     
 ```py
@@ -53,12 +66,15 @@ return {}, 'hello'
 return 'hello'
 ```
 
-The body of an http response is always binary. In asgish, a string or
-dict body is automatically converted, and the content-type is set to
-'text/plain' and 'application/json', respectively.
+The body of an http response is always binary. In asgish the body can be:
+    
+* `bytes`: is passed unchanged.
+* `str`: is encoded and the `content-type` header is set to `text/plain`.
+* `dict`: is JSON-encoded, and the `content-type` header is set to `application/json`.
+* an async generator: must yield bytes or str,  see below.
 
 Responses can also be send in chunks, using an async generator:
-```
+```py
 async def chunkgenerator():
     for chunk in ['foo', 'bar', 'spam', 'eggs']:
         yield chunk

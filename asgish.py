@@ -1,14 +1,5 @@
 """
-asgish - an ASGI-ish API to write http request handlers.
-
-I like ASGI, but it's too awkward to work with directly, so I created
-this minimal layer on top.
-
-Asgish is a Python ASGI web microframework that tries to be as minimal
-as possible, but still offer a friendly API. We don't do fancy routing,
-it's async handlers all the way down.
-
-See Quart, Starlette, and others for more advanced frameworks.
+asgish - An ASGI web framework with an ASGI-ish API
 """
 
 import json
