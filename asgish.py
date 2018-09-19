@@ -79,8 +79,11 @@ class BaseApplication:
             if isinstance(body, bytes):
                 pass
             elif isinstance(body, str):
+                if body.startswith(("<!DOCTYPE ", "<html>")):
+                    headers.setdefault("content-type", "text/html")
+                else:
+                    headers.setdefault("content-type", "text/plain")
                 body = body.encode()
-                headers.setdefault("content-type", "text/plain")
             elif isinstance(body, dict):
                 try:
                     body = json.dumps(body).encode()

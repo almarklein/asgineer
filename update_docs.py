@@ -36,7 +36,9 @@ def get_request_docs():
                     )
             # parts.append('##')
         else:
-            parts.append("### function ``{}{}``\n\n{}".format(ob.__name__, sig, get_doc(ob, 4)))
+            parts.append(
+                "### function ``{}{}``\n\n{}".format(ob.__name__, sig, get_doc(ob, 4))
+            )
 
     return "\n".join(parts)
 

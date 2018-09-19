@@ -135,6 +135,14 @@ async def handler_json1(request):
     return {"foo": 42, "bar": 7}
 
 
+async def handler_html1(request):
+    return "<!DOCTYPE html> <html>foo</html>"
+
+
+async def handler_html2(request):
+    return "<html>foo</html>"
+
+
 def test_normal_usage():
 
     # Test normal usage
@@ -217,13 +225,45 @@ def test_output_shapes():
     assert not p.out
     assert "xx-foo" in res.headers
 
+
+def test_body_types():
+
+    # Plain text
+
+    with ServerProcess(handler4) as p:
+        res = requests.get(url)
+
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "text/plain"
+    assert res.content.decode()
+    assert not p.out
+
     # Json
 
     with ServerProcess(handler_json1) as p:
         res = requests.get(url)
 
     assert res.status_code == 200
+    assert res.headers["content-type"] == "application/json"
     assert res.json() == {"foo": 42, "bar": 7}
+    assert not p.out
+
+    # HTML
+
+    with ServerProcess(handler_html1) as p:
+        res = requests.get(url)
+
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "text/html"
+    assert "foo" in res.content.decode()
+    assert not p.out
+
+    with ServerProcess(handler_html2) as p:
+        res = requests.get(url)
+
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "text/html"
+    assert "foo" in res.content.decode()
     assert not p.out
 
 
@@ -504,6 +544,7 @@ def test_wrong_use():
 ##
 
 if __name__ == "__main__":
+
     # Select backend with cli arg
     for arg in sys.argv:
         if arg.upper().startswith("--ASGISH_SERVER="):
