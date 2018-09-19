@@ -6,16 +6,20 @@ An ASGI web framework with an ASGI-ish API
 
 ## Introduction
 
-Asgish is a Python ASGI web microframework that tries to add as few
+Asgish is a tool to write asynchronous web applications, using as few
 abstractions as possible, while still offering a friendly API. It does not
 do fancy routing; it's async handlers all the way down.
 
+More precisely, asgish is a Python ASGI web microframework.
 The [ASGI](https://asgi.readthedocs.io) specification allows async web
 servers and frameworks to talk to each-other in a standardized way.
 Like WSGI, but for async.
 I like getting to the metal, but writing web applications using
 an [ASGI application class](https://asgi.readthedocs.io/en/latest/specs/main.html#applications)
 is just too awkward, so I created this minimal layer on top.
+
+When running asgish on [uvicorn](https://github.com/encode/uvicorn),
+it is one of the fastest web frameworks avaialble (it should be faster than Sanic).
 
 Other ASGI frameworks include [Starlette](https://github.com/encode/starlette), [Quart](https://github.com/pgjones/quart),
 and [others](https://asgi.readthedocs.io/en/latest/implementations.html#application-frameworks).
