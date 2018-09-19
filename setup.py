@@ -3,11 +3,11 @@ asgish setup script.
 """
 
 import os
-import sys
-import shutil
 
 try:
-    import setuptools  # noqa, analysis:ignore
+    import setuptools
+
+    assert setuptools  # fool pyflakes by "using" setuptools
 except ImportError:
     pass  # setuptools allows for "develop", but it's not essential
 
