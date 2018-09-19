@@ -150,7 +150,7 @@ To install/upgrade: `pip install asgish --upgrade`
 
 ## Development
 
-Extra dev dependencies: `pip install black pyflakes pytest sphinx`
+Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests`
 
 * Use `black .` to apply Black code formatting.
 * Run `pyflakes .` to test for unused imports and more.
