@@ -26,8 +26,7 @@ from asgish import handler2asgi
 
 @handler2asgi
 async def main(request):
-    return 200, {'content-type': 'text/html'}, f"You requested <b>{request.path}</b>"
-
+    return f"<html>You requested <b>{request.path}</b></html>"
 ```
 
 ## Running the application
@@ -67,7 +66,8 @@ return 'hello'
 The body of an HTTP response is always binary. In asgish the body can be:
     
 * `bytes`: is passed unchanged.
-* `str`: is encoded and the `content-type` header is set to `text/plain`.
+* `str`: is UTF-8 encoded. When it starts with '<!DOCTYPE ' or '<html>' the
+  `content-type` header defaults to `text/html`, otherwise it defaults to `text/plain`.
 * `dict`: is JSON-encoded, and the `content-type` header is set to `application/json`.
 * an async generator: must yield bytes or str,  see below.
 
