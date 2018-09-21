@@ -8,7 +8,9 @@ An ASGI web framework with an ASGI-ish API
 
 Asgish is a tool to write asynchronous web applications, using as few
 abstractions as possible, while still offering a friendly API. It does not
-do fancy routing; it's async handlers all the way down.
+do fancy routing; it's async handlers all the way down. Since asgi does not
+depend on `asyncio`, it can also be used with alternative async
+libraries like [Trio](https://github.com/python-trio/trio).
 
 More precisely, asgish is a Python ASGI web microframework.
 The [ASGI](https://asgi.readthedocs.io) specification allows async web
