@@ -1,5 +1,5 @@
 # asgish
-An ASGI web framework with an ASGI-ish API
+An ASGI web framework with an ASGI-ish API 🐍🤘
 
 [![Build Status](https://api.travis-ci.org/almarklein/asgish.svg)](https://travis-ci.org/almarklein/asgish)
 
