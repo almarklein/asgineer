@@ -1,4 +1,9 @@
-import asyncio
+"""
+Example web app written in asgish. We have one main handler, which may
+delegate the request to one of the other handlers.
+"""
+
+import sys
 
 from asgish import handler2asgi
 
@@ -24,7 +29,7 @@ async def main(request):
     elif request.path == "/chunks":
         return await chunks(request)
     else:
-        return 404, {}, "404 not found"
+        return 404, {}, f"404 not found {request.path}"
 
 
 async def api(request):
@@ -45,7 +50,7 @@ async def redirect(request):
     """
     url = request.querydict.get("url", "")
     if url:
-        return 307, {"Location": url}, "Redirecting"
+        return 307, {"location": url}, "Redirecting"
     else:
         return 500, {}, "specify the URL using a query param"
 
@@ -56,12 +61,17 @@ async def chunks(request):
     but only displays it when done. This e.g. allows streaming large
     files without using large amounts of memory.
     """
+    # Little triage to support both Trio and asyncio based apps
+    if "trio" in sys.modules:
+        import trio as aio
+    else:
+        import asyncio as aio
 
     async def iter():
         yield "<html><head></head><body>"
         yield "Here are some chunks dripping in:<br>"
         for i in range(20):
-            await asyncio.sleep(0.1)
+            await aio.sleep(0.1)
             yield "CHUNK <br>"
         yield "</body></html>"
 
@@ -69,6 +79,11 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-    import uvicorn
 
-    uvicorn.run(main, host="127.0.0.1", port=8080)
+    # === Pick a server:
+    # from daphne import run  # does not yet work
+    # from hypercorn import run  # does not yet work
+    # from trio_web import run
+    from uvicorn import run
+
+    run(main, host="127.0.0.1", port=8080)
