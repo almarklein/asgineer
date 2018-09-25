@@ -16,6 +16,7 @@ url = f"http://localhost:{port}"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 SERVER_CODE = {
     "hypercorn": f"""
 import sys
@@ -33,7 +34,7 @@ run = lambda app: uvicorn.run(app, host="127.0.0.1", port={port}, log_level="war
 """,
 }
 
-START_CODE = """
+START_CODE = f"""
 import sys
 import threading
 import _thread
@@ -45,10 +46,16 @@ threading.Thread(target=closer).start()
 
 sys.stdout.write("START\\n")
 sys.stdout.flush()
-run(app)
+
+run("__main__:app", "asgiservername", "localhost:{port}", log_level="warning")
+
 sys.stdout.flush()
 sys.exit(0)
 """
+
+
+def getbackend():
+    return os.environ.get("ASGISH_SERVER", "hypercorn").lower()
 
 
 class ServerProcess:
@@ -57,15 +64,14 @@ class ServerProcess:
 
     def __init__(self, handler):
         self._handler_code = inspect.getsource(handler)
-        self._handler_code += "\nfrom asgish import handler2asgi\n"
+        self._handler_code += "\nfrom asgish import handler2asgi, run\n"
         self._handler_code += f"\napp = handler2asgi({handler.__name__})\n"
         self.out = ""
 
     def __enter__(self):
         # Prepare code and command
-        backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
-        server_code = SERVER_CODE[backend]  # fails if invalid backend is given
-        cmd = [sys.executable, "-c", self._handler_code + server_code + START_CODE]
+        start_code = START_CODE.replace("asgiservername", getbackend())
+        cmd = [sys.executable, "-c", self._handler_code + start_code]
         # Start subprocess
         self._p = subprocess.Popen(
             cmd,
@@ -111,8 +117,7 @@ class ServerProcess:
 def test_backend_reporter(capsys=None):
     """ A stub test to display the used backend.
     """
-    backend = os.environ.get("ASGISH_SERVER", "uvicorn").lower()
-    msg = f"  Running tests with ASGI server: {backend}"
+    msg = f"  Running tests with ASGI server: {getbackend()}"
     if capsys:
         with capsys.disabled():
             print(msg)
@@ -188,13 +193,11 @@ def test_normal_usage():
     assert res.content.decode() == "hi!"
     assert not p.out
 
-    assert set(res.headers.keys()) == {
-        "server",
-        "date",
-        "content-type",
-        "content-length",
-        "xx-foo",
-    }
+    # Daphne capitalizes the header keys, hypercorn aims at lowercase
+    refheaders = {"content-type", "content-length", "xx-foo"}
+    if getbackend() == "uvicorn":
+        refheaders.update({"server", "date"})
+    assert set(k.lower() for k in res.headers.keys()) == refheaders
     assert res.headers["content-type"] == "text/plain"
     assert res.headers["content-length"] == "3"  # yes, a string
 
