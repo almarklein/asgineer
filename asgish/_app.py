@@ -1,13 +1,12 @@
+"""
+This module implements an ASGI application class that forms the adapter
+between the user-defined handler function and the ASGI server.
+"""
 
-
-import sys
 import json
-import random
 import inspect
 
-from urllib.parse import parse_qsl  # urlparse, unquote
-
-
+from ._request import HttpRequest, WebsocketRequest
 
 
 def handler2asgi(handler):
@@ -27,9 +26,6 @@ def handler2asgi(handler):
     return Application
 
 
-from asgish_ws import WebSocket
-
-
 class BaseApplication:
     """ Base ASGI application class.
     """
@@ -42,9 +38,9 @@ class BaseApplication:
     async def __call__(self, receive, send):
         
         if self._scope['type'] == 'http':
-            request = Request(self._scope, receive)
+            request = HttpRequest(self._scope, receive)
         elif self._scope['type'] == 'websocket':
-            request = WebSocket(self._scope, receive, send)
+            request = WebsocketRequest(self._scope, receive, send)
             await self._handler(request)
             return
         else:

@@ -6,8 +6,9 @@ abstractions as possible, while still offering a friendly API. It does not
 do fancy routing; it's async handlers all the way down.
 """
 
+from ._request import BaseRequest, HttpRequest, WebsocketRequest
 from ._app import handler2asgi
 from ._run import run
 
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"

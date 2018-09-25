@@ -1,3 +1,8 @@
+"""
+This module implements a ``run()`` function to start an ASGI server of choice.
+"""
+
+
 def run(app, server, *, bind='127.0.0.1:8080', log_level='info', **kwargs):
     
     #alphabet = 'abcdefghijklmnopqrstuvwxyz'

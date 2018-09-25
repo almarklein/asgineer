@@ -1,25 +1,25 @@
+"""
+This module implements the HttpRequest and WebsocketRequest classes that
+are passed as an argument into the user's handler function.
+"""
+
+import json
+from urllib.parse import parse_qsl  # urlparse, unquote
+
+
 class BaseRequest:
-    """ Representation of an HTTP request. An object of this class is
-    passed to the request handler.
+    """ Base request class.
     """
 
     __slots__ = (
         "_scope",
-        "_receive",
-        "_iter_done",
-        "_url",
         "_headers",
-        "_body",
         "_querylist",
     )
 
-    def __init__(self, scope, receive):
+    def __init__(self, scope):
         self._scope = scope
-        self._receive = receive
-        self._iter_done = False
-
         self._headers = None
-        self._body = None
         self._querylist = None
 
     @property
@@ -100,6 +100,9 @@ class BaseRequest:
 
 
 class HttpRequest(BaseRequest):
+    """ Representation of an HTTP request. An object of this class is
+    passed to the request handler.
+    """
     
     __slots__ = (
         "_receive",
@@ -172,12 +175,14 @@ class WebSocketClose:
         await send({"type": "websocket.close", "code": self.code})
 
 
-class WebsocketRequest(Request):
+class WebsocketRequest(BaseRequest):
+    """ Representation of a websocket request. An object of this class is
+    passed to the request handler.
+    """
     
     __slots__ = (
         "_receive",
         "_send",
-        "_iter_done",
         "_client_state",
         "_application_state",
     )

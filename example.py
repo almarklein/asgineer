@@ -131,4 +131,4 @@ if __name__ == "__main__":
     # from trio_web import run
     # from uvicorn import run
 
-    x = run(main, 'hypercorn', bind="127.0.0.1:80")
+    x = run(main, 'uvicorn', bind="127.0.0.1:80")
