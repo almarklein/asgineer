@@ -5,23 +5,45 @@ delegate the request to one of the other handlers.
 
 import sys
 
-from asgish import handler2asgi
+from asgish import handler2asgi, run
 
 index = """
 <html>
+    <a href='/serverinfo'>server info</a><br>
     <a href='/api/items'>item api</a><br>
     <a href='/chunks'>chunks</a><br>
     <a href='/redirect?url=http://python.org'>redirect</a><br>
-    
+
+
+<script>
+
+window.onload = function() {
+    window.ws = new WebSocket('ws://' + window.location.host + '/ws');
+    window.ws.onmessage = function(m) {
+        console.log(m);
+    }
+    window.ws.onerror = function (e) {
+        console.log(e);
+    }
+    window.ws.onclose = function () {
+        console.log('ws closed');
+    }
+}
+
+</script>
 </html>
 """.lstrip()
 
 
 @handler2asgi
 async def main(request):
-
+    
     if not request.path.rstrip("/"):
         return index  # asgish sets the text/html content type
+    elif request.path.startswith("/ws"):
+        return await websocket_handler(request)
+    elif request.path.startswith("/serverinfo"):
+        return await serverinfo(request)
     elif request.path.startswith("/api/"):
         return await api(request)
     elif request.path == "/redirect":
@@ -32,9 +54,32 @@ async def main(request):
         return 404, {}, f"404 not found {request.path}"
 
 
+async def websocket_handler(request):
+    assert request.scope['type'] == 'websocket', 'Expected ws'
+    print('request', request)
+    
+    await request.accept()  # todo: server part can do this?
+    await request.send('hello!')
+    
+    async def waiter():
+        async for m in request.receive_iter():
+            print(m)
+        print('done')
+    
+    import asyncio
+    await asyncio.create_task(waiter())
+
+
+async def serverinfo(request):
+    """ Display some info on the server.
+    """
+    return f"{request.scope['server']}"
+
+
 async def api(request):
     """ Handler for the API.
     """
+    
     return {
         "this": "is",
         "the": "api",
@@ -82,8 +127,8 @@ if __name__ == "__main__":
 
     # === Pick a server:
     # from daphne import run  # does not yet work
-    # from hypercorn import run  # does not yet work
+    #from hypercorn import run  # does not yet work
     # from trio_web import run
-    from uvicorn import run
+    # from uvicorn import run
 
-    run(main, host="127.0.0.1", port=8080)
+    x = run(main, 'hypercorn', bind="127.0.0.1:80")

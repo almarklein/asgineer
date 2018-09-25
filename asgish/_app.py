@@ -1,17 +1,13 @@
-"""
-asgish - An ASGI web framework with an ASGI-ish API
 
-Asgish is a tool to write asynchronous web applications, using as few
-abstractions as possible, while still offering a friendly API. It does not
-do fancy routing; it's async handlers all the way down.
-"""
 
+import sys
 import json
+import random
 import inspect
+
 from urllib.parse import parse_qsl  # urlparse, unquote
 
 
-__version__ = "0.1.2"
 
 
 def handler2asgi(handler):
@@ -25,7 +21,9 @@ def handler2asgi(handler):
 
     class Application(BaseApplication):
         _handler = staticmethod(handler)
-
+    
+    Application.__module__ = handler.__module__
+    Application.__name__ = handler.__name__
     return Application
 
 
@@ -170,6 +168,9 @@ class Request:
         return json.loads(body.decode())
 
 
+from asgish_ws import WebSocket
+
+
 class BaseApplication:
     """ Base ASGI application class.
     """
@@ -180,8 +181,16 @@ class BaseApplication:
         self._scope = scope
 
     async def __call__(self, receive, send):
-        request = Request(self._scope, receive)
-
+        
+        if self._scope['type'] == 'http':
+            request = Request(self._scope, receive)
+        elif self._scope['type'] == 'websocket':
+            request = WebSocket(self._scope, receive, send)
+            await self._handler(request)
+            return
+        else:
+            raise RuntimeError(f"Dont know about ASGI type {self._scope['type']}")
+    
         # === Call handler to get the result
         try:
 
@@ -190,8 +199,11 @@ class BaseApplication:
         except Exception as err:
             # Error in the handler
             errer_text = "Error in request handler: " + str(err)
-            await send({"type": "http.response.start", "status": 500, "headers": []})
-            await send({"type": "http.response.body", "body": errer_text.encode()})
+            try:
+                await send({"type": "http.response.start", "status": 500, "headers": []})
+                await send({"type": "http.response.body", "body": errer_text.encode()})
+            except Exception:
+                pass
             raise err
 
         # === Process the handler output
