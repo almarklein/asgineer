@@ -98,7 +98,7 @@ class BaseApplication:
             if isinstance(body, bytes):
                 pass
             elif isinstance(body, str):
-                if body.startswith(("<!DOCTYPE ", "<html>")):
+                if body.startswith(("<!DOCTYPE html>", "<html>")):
                     headers.setdefault("content-type", "text/html")
                 else:
                     headers.setdefault("content-type", "text/plain")

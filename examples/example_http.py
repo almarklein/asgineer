@@ -1,6 +1,7 @@
 """
 Example web app written in asgish. We have one main handler, which may
-delegate the request to one of the other handlers.
+delegate the request to one of the other handlers, which demonstrate a
+few different ways to send an http response.
 """
 
 import sys
@@ -8,29 +9,16 @@ import sys
 from asgish import handler2asgi, run
 
 index = """
+<!DOCTYPE html>
 <html>
-    <a href='/serverinfo'>server info</a><br>
-    <a href='/api/items'>item api</a><br>
+<meta><meta charset='UTF-8'></meta>
+<body>
+    <a href='/foo.bin'>Bytes</a><br>
+    <a href='/foo.txt'>Text</a><br>
+    <a href='/api/items'>JSON api</a><br>
     <a href='/chunks'>chunks</a><br>
     <a href='/redirect?url=http://python.org'>redirect</a><br>
-
-
-<script>
-
-window.onload = function() {
-    window.ws = new WebSocket('ws://' + window.location.host + '/ws');
-    window.ws.onmessage = function(m) {
-        console.log(m);
-    }
-    window.ws.onerror = function (e) {
-        console.log(e);
-    }
-    window.ws.onclose = function () {
-        console.log('ws closed');
-    }
-}
-
-</script>
+</body>
 </html>
 """.lstrip()
 
@@ -40,12 +28,12 @@ async def main(request):
 
     if not request.path.rstrip("/"):
         return index  # asgish sets the text/html content type
-    elif request.path.startswith("/ws"):
-        return await websocket_handler(request)
-    elif request.path.startswith("/serverinfo"):
-        return await serverinfo(request)
+    elif request.path.endswith(".txt"):
+        return await text_handler(request)
+    elif request.path.endswith(".bin"):
+        return await bytes_handler(request)
     elif request.path.startswith("/api/"):
-        return await api(request)
+        return await json_api(request)
     elif request.path == "/redirect":
         return await redirect(request)
     elif request.path == "/chunks":
@@ -54,33 +42,24 @@ async def main(request):
         return 404, {}, f"404 not found {request.path}"
 
 
-async def websocket_handler(request):
-    assert request.scope["type"] == "websocket", "Expected ws"
-    print("request", request)
-
-    await request.accept()  # todo: server part can do this?
-    await request.send("hello!")
-
-    async def waiter():
-        async for m in request.receive_iter():
-            print(m)
-        print("done")
-
-    import asyncio
-
-    await asyncio.create_task(waiter())
-
-
-async def serverinfo(request):
-    """ Display some info on the server.
+async def text_handler(request):
+    """ Returning a string causes the content-type to default to text/plain.
+    Note that the main handler also returns a string, but gets a text/html
+    content-type because it starts with "<!DOCTYPE html>" or "<html>".
     """
-    return f"{request.scope['server']}"
+    return "Hello world"
 
 
-async def api(request):
-    """ Handler for the API.
+async def bytes_handler(request):
+    """ Returning bytes; a response in its purest form.
     """
+    return b"x" * 42
 
+
+async def json_api(request):
+    """ Returning a dict will cause the content-type to default to
+    application/json.
+    """
     return {
         "this": "is",
         "the": "api",
@@ -90,7 +69,7 @@ async def api(request):
 
 
 async def redirect(request):
-    """ Handler to do redirects using http 307.
+    """ Handler to do redirects using HTTP status code 307.
     The url to redirect to must be given with a query parameter:
     http://localhost/redirect?url=http://example.com
     """
