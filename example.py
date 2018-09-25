@@ -37,7 +37,7 @@ window.onload = function() {
 
 @handler2asgi
 async def main(request):
-    
+
     if not request.path.rstrip("/"):
         return index  # asgish sets the text/html content type
     elif request.path.startswith("/ws"):
@@ -55,18 +55,19 @@ async def main(request):
 
 
 async def websocket_handler(request):
-    assert request.scope['type'] == 'websocket', 'Expected ws'
-    print('request', request)
-    
+    assert request.scope["type"] == "websocket", "Expected ws"
+    print("request", request)
+
     await request.accept()  # todo: server part can do this?
-    await request.send('hello!')
-    
+    await request.send("hello!")
+
     async def waiter():
         async for m in request.receive_iter():
             print(m)
-        print('done')
-    
+        print("done")
+
     import asyncio
+
     await asyncio.create_task(waiter())
 
 
@@ -79,7 +80,7 @@ async def serverinfo(request):
 async def api(request):
     """ Handler for the API.
     """
-    
+
     return {
         "this": "is",
         "the": "api",
@@ -127,8 +128,8 @@ if __name__ == "__main__":
 
     # === Pick a server:
     # from daphne import run  # does not yet work
-    #from hypercorn import run  # does not yet work
+    # from hypercorn import run  # does not yet work
     # from trio_web import run
     # from uvicorn import run
 
-    x = run(main, 'uvicorn', bind="127.0.0.1:80")
+    x = run(main, "uvicorn", bind="127.0.0.1:80")

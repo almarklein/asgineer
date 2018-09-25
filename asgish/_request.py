@@ -11,11 +11,7 @@ class BaseRequest:
     """ Base request class.
     """
 
-    __slots__ = (
-        "_scope",
-        "_headers",
-        "_querylist",
-    )
+    __slots__ = ("_scope", "_headers", "_querylist")
 
     def __init__(self, scope):
         self._scope = scope
@@ -103,19 +99,15 @@ class HttpRequest(BaseRequest):
     """ Representation of an HTTP request. An object of this class is
     passed to the request handler.
     """
-    
-    __slots__ = (
-        "_receive",
-        "_iter_done",
-        "_body",
-    )
+
+    __slots__ = ("_receive", "_iter_done", "_body")
 
     def __init__(self, scope, receive):
         super().__init__(scope)
         self._receive = receive
         self._iter_done = False
         self._body = None
-    
+
     async def iter_body(self):
         """ An async generator that iterates over the chunks in the body.
         """
@@ -179,13 +171,8 @@ class WebsocketRequest(BaseRequest):
     """ Representation of a websocket request. An object of this class is
     passed to the request handler.
     """
-    
-    __slots__ = (
-        "_receive",
-        "_send",
-        "_client_state",
-        "_application_state",
-    )
+
+    __slots__ = ("_receive", "_send", "_client_state", "_application_state")
 
     def __init__(self, scope, receive, send):
         assert scope["type"] == "websocket"
@@ -194,7 +181,7 @@ class WebsocketRequest(BaseRequest):
         self._send = send
         self._client_state = CONNECTING
         self._application_state = CONNECTING
-    
+
     async def raw_receive(self):
         """
         Receive ASGI websocket messages, ensuring valid state transitions.
@@ -247,14 +234,14 @@ class WebsocketRequest(BaseRequest):
     def _raise_on_disconnect(self, message):
         if message["type"] == "websocket.disconnect":
             raise WebSocketDisconnect(message["code"])
-    
+
     async def receive_iter(self):
         while True:
             message = await self.raw_receive()
             if message["type"] == "websocket.disconnect":
                 return
-            yield message['bytes']
-    
+            yield message["bytes"]
+
     async def receive_text(self):
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
@@ -283,8 +270,8 @@ class WebsocketRequest(BaseRequest):
             encoded = json.dumps(value).encode()
             await self.raw_send({"type": "websocket.send", "bytes": encoded})
         else:
-            raise TypeError('Can only send bytes/str/dict.')
-            
+            raise TypeError("Can only send bytes/str/dict.")
+
     async def send_text(self, data):
         await self.raw_send({"type": "websocket.send", "text": data})
 

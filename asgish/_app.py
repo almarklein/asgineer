@@ -20,7 +20,7 @@ def handler2asgi(handler):
 
     class Application(BaseApplication):
         _handler = staticmethod(handler)
-    
+
     Application.__module__ = handler.__module__
     Application.__name__ = handler.__name__
     return Application
@@ -36,16 +36,16 @@ class BaseApplication:
         self._scope = scope
 
     async def __call__(self, receive, send):
-        
-        if self._scope['type'] == 'http':
+
+        if self._scope["type"] == "http":
             request = HttpRequest(self._scope, receive)
-        elif self._scope['type'] == 'websocket':
+        elif self._scope["type"] == "websocket":
             request = WebsocketRequest(self._scope, receive, send)
             await self._handler(request)
             return
         else:
             raise RuntimeError(f"Dont know about ASGI type {self._scope['type']}")
-    
+
         # === Call handler to get the result
         try:
 
@@ -55,7 +55,9 @@ class BaseApplication:
             # Error in the handler
             errer_text = "Error in request handler: " + str(err)
             try:
-                await send({"type": "http.response.start", "status": 500, "headers": []})
+                await send(
+                    {"type": "http.response.start", "status": 500, "headers": []}
+                )
                 await send({"type": "http.response.body", "body": errer_text.encode()})
             except Exception:
                 pass
