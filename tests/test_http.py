@@ -11,28 +11,11 @@ import pytest
 from asgish import handler2asgi
 
 port = 8888
-url = f"http://localhost:{port}"
+url = f"http://127.0.0.1:{port}"
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
-SERVER_CODE = {
-    "hypercorn": f"""
-import sys
-import logging
-import hypercorn
-config = hypercorn.Config.from_mapping(dict(host="127.0.0.1", port={port}))
-config.error_logger = logging.getLogger("hypercorn.error")
-config.error_logger.addHandler(logging.StreamHandler(sys.stderr))
-config.error_logger.setLevel(logging.INFO)
-run = lambda app: hypercorn.run_single(app, config)
-""",
-    "uvicorn": f"""
-import uvicorn
-run = lambda app: uvicorn.run(app, host="127.0.0.1", port={port}, log_level="warning")
-""",
-}
 
 START_CODE = f"""
 import sys
@@ -69,6 +52,7 @@ class ServerProcess:
         self.out = ""
 
     def __enter__(self):
+        print(".", end="")
         # Prepare code and command
         start_code = START_CODE.replace("asgiservername", getbackend())
         cmd = [sys.executable, "-c", self._handler_code + start_code]
@@ -92,9 +76,11 @@ class ServerProcess:
             )
         # Then wait a bit more, to be sure the server is up
         time.sleep(0.2)
+        print(".", end="")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        print(".", end="")
         # Ask process to stop
         time.sleep(0.1)  # Give server time to recover (hypercorn seems to need that)
         self._p.stdin.close()
@@ -112,6 +98,7 @@ class ServerProcess:
 
         # Get output
         self.out = self._p.stdout.read().decode()
+        print(".")
 
 
 def test_backend_reporter(capsys=None):
