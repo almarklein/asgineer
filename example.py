@@ -125,4 +125,4 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-    run(main, server="uvicorn", bind="127.0.0.1:80")
+    run(main, server="uvicorn", bind="localhost:80", log_level="info")

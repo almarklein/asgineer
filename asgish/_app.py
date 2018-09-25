@@ -7,6 +7,9 @@ import json
 import inspect
 from ._request import HttpRequest, WebsocketRequest
 
+# todo: Connection: Close
+# https://www.uvicorn.org/server-behavior/
+
 
 def handler2asgi(handler):
     """ Convert a request handler (a coroutine function) to an ASGI

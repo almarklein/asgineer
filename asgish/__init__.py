@@ -8,7 +8,7 @@ do fancy routing; it's async handlers all the way down.
 
 from ._request import BaseRequest, HttpRequest, WebsocketRequest
 from ._app import handler2asgi
-from ._run import run
+from .__main__ import run
 
 
 __all__ = ["BaseRequest", "HttpRequest", "WebsocketRequest", "handler2asgi", "run"]
