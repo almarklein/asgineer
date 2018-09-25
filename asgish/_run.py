@@ -2,27 +2,70 @@
 This module implements a ``run()`` function to start an ASGI server of choice.
 """
 
+import sys
+
+SERVERS = {"hypercorn": _run_hypercorn, "uvicorn": _run_uvicorn, "daphne": _run_daphne}
+
 
 def run(app, server, *, bind="127.0.0.1:8080", log_level="info", **kwargs):
 
-    # alphabet = 'abcdefghijklmnopqrstuvwxyz'
-    # name = app.__name__ + '_' + ''.join(random.choice(alphabet) for i in range(7))
-    # globals()[name] = app
+    # Compose application name
     appname = app.__module__ + ":" + app.__name__
 
-    servers = {
-        "hypercorn": _run_hypercorn,
-        "uvicorn": _run_uvicorn,
-        "daphne": _run_daphne,
-    }
-
+    # Select server function
     try:
-        func = servers[server.lower()]
+        func = SERVERS[server.lower()]
     except KeyError:
         raise ValueError(f"Invalid server specified: {server}")
 
-    # return func(__name__ + ':' + name, bind, log_level, **kwargs)
+    # Delegate
     return func(appname, bind, log_level, **kwargs)
+
+
+def main(argv):
+
+    # Parse args, collect into kwargs and positional args
+    argv2 = []
+    kwargs = {}
+    argv = argv.copy()
+    while argv:
+        arg = arg.pop(0)
+        if arg.startswith("--"):
+            if "=" in arg:
+                key, _.val = arg[2:].partition("=")
+            else:
+                key = arg[2:]
+                val = argv.pop(0, "")
+            kwargs[key] = val
+        else:
+            argv2.append(arg)
+
+    # Extract required args (--server and --bind)
+    try:
+        server = kwargs.pop("server")
+    except KeyError:
+        raise RuntimeError("Asgish command needs --server=xx")
+    try:
+        bind = kwargs.pop("bind")
+    except KeyError:
+        raise RuntimeError("Asgish command needs --bind=xx")
+
+    # Extract special optional args
+    log_level = kwargs.pop("log-level", "info")
+
+    # Extract application name from positional args
+    if len(argv2) != 1:
+        raise RuntimeError("Asgish command expects one positional argument.")
+    appname = argv2[0]
+
+    # Select server function
+    try:
+        func = SERVERS[server.lower()]
+    except KeyError:
+        raise ValueError(f"Invalid server specified: {server}")
+
+    # Delegate
+    func(appname, bind, log_level, **kwargs)
 
 
 def _run_hypercorn(appname, bind, log_level, **kwargs):
@@ -67,3 +110,7 @@ def _run_daphne(appname, bind, log_level, **kwargs):
 
     args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
     return CommandLineInterface().run(args + [appname])
+
+
+if __name__ == "__main__":
+    main(sys.argv)

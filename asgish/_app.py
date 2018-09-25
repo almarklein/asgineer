@@ -5,7 +5,6 @@ between the user-defined handler function and the ASGI server.
 
 import json
 import inspect
-
 from ._request import HttpRequest, WebsocketRequest
 
 

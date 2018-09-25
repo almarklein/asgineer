@@ -125,11 +125,4 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-
-    # === Pick a server:
-    # from daphne import run  # does not yet work
-    # from hypercorn import run  # does not yet work
-    # from trio_web import run
-    # from uvicorn import run
-
-    x = run(main, "uvicorn", bind="127.0.0.1:80")
+    run(main, server="uvicorn", bind="127.0.0.1:80")
