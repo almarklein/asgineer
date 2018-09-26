@@ -45,7 +45,7 @@ name = "asgish"
 description = "An ASGI web framework with an ASGI-ish API"
 
 # Get version and docstring (i.e. long description)
-version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish.py"))
+version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish", "__init__.py"))
 
 
 ## Setup
@@ -65,9 +65,9 @@ setup(
     provides=[name],
     python_requires=">=3.6",
     install_requires=[],
-    py_modules=["asgish"],
+    packages=["asgish"],
     # entry_points={'console_scripts': ['asgi = asgi:cli'], },
-    zip_safe=False,
+    zip_safe=True,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
