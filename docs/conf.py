@@ -9,35 +9,36 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
+
+sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asgish
 
 # -- General configuration ------------------------------------------------
 
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.viewcode']
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []  # ['_templates']
-source_suffix = '.rst'
-master_doc = 'index'
+source_suffix = ".rst"
+master_doc = "index"
 
 # General information about the project.
-project = 'asgish'
-copyright = '2018, Almar Klein'
-author = 'Almar Klein'
+project = "Asgish"
+copyright = "2018, Almar Klein"
+author = "Almar Klein"
 
 # The short X.Y version.
-version = '.'.join(asgish.__version__.split('.')[:2])
+version = ".".join(asgish.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = asgish.__version__
 
 language = None
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-pygments_style = 'sphinx'
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+pygments_style = "sphinx"
 todo_include_todos = False
+html_show_sourcelink = False
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -60,9 +61,8 @@ html_static_path = []  # ['_static']
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    '**': [
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
+    "**": [
+        "relations.html",  # needs 'show_related': True theme option to display
+        "searchbox.html",
     ]
 }
-

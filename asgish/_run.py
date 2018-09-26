@@ -8,12 +8,11 @@ def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
     (This works for any ASGI app, not just asgish apps.)
     
     Arguments:
-        app (required): The ASGI application object, or a string "module.path:appname".
-        server (required): The name of the server library to use,
-            e.g. 'uvicorn', 'hypercorn', 'daphne'.
-        log_level: The logging level, e.g. 'warning', 'info', 'debug'. Default 'info'.
-        kwargs: additional arguments to pass to the underlying server library.
     
+    * app (required): The ASGI application object, or a string ``"module.path:appname"``.
+    * server (required): The name of the server library to use, e.g. uvicorn/hypercorn/etc.
+    * log_level: The logging level, e.g. warning/info/debug. Default 'info'.
+    * kwargs: additional arguments to pass to the underlying server library.
     """
 
     # Compose application name

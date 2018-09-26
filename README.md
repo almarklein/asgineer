@@ -6,28 +6,16 @@ An ASGI web framework with an ASGI-ish API 🐍🤘
 
 ## Introduction
 
-Asgish is a tool to write asynchronous web applications, using as few
-abstractions as possible, while still offering a friendly API. It does not
-do fancy routing; it's async handlers all the way down. Since asgi does not
-depend on `asyncio`, it can also be used with alternative async
-libraries like [Trio](https://github.com/python-trio/trio).
-
-More precisely, asgish is a Python ASGI web microframework.
-The [ASGI](https://asgi.readthedocs.io) specification allows async web
-servers and frameworks to talk to each-other in a standardized way.
-Like WSGI, but for async.
-I like getting to the metal, but writing web applications using
-an [ASGI application class](https://asgi.readthedocs.io/en/latest/specs/main.html#applications)
-is just too awkward, so I created this minimal layer on top.
+[Asgish](https://asgish.readthedocs.io) is a tool to write asynchronous
+web applications, using as few abstractions as possible, while still
+offering a friendly API. It does not do fancy routing; it's async
+handlers all the way down.
 
 When running asgish on [uvicorn](https://github.com/encode/uvicorn),
 it is one of the fastest web frameworks available (it should be faster than Sanic).
 
-Other ASGI frameworks include [Starlette](https://github.com/encode/starlette), [Quart](https://github.com/pgjones/quart),
-and [others](https://asgi.readthedocs.io/en/latest/implementations.html#application-frameworks).
 
-
-## A first look
+## Example
 
 ```py
 # example.py
@@ -36,122 +24,30 @@ from asgish import handler2asgi
 @handler2asgi
 async def main(request):
     return f"<html>You requested <b>{request.path}</b></html>"
+
+if __name__ == '__main__':
+    from asgish import run
+    run(main, 'hypercorn', 'localhost:8080')
 ```
 
-## Running the application
-
-The above example can be run from the command line:
+You can start the server by running this script, or start it the "ASGI way", e.g.
+with Uvicorn:
 ```
-$ uvicorn example.py:main
+$ uvicorn example.py:main --host=localhost --port=8080
 ```
-
-You can replace `uvicorn` with any other ASGI server, like `hypercorn` or `daphne`.
-
-Some servers also allow running programatically. Just put this at the bottom of
-the same file:
-
-```py
-import uvicorn
-uvicorn.run(main)
-
-```
-
-## Returning the response
-
-With HTTP, a response really consists of three things: an integer
-[status code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes),
-a dictionary of [headers](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields),
-and the response [body](https://en.wikipedia.org/wiki/HTTP_message_body).
-In asgish you just return these three. You can also
-omit the status and/or headers. These are all equivalent:
-    
-```py
-return 200, {}, 'hello'
-return 200, 'hello'
-return {}, 'hello'
-return 'hello'
-```
-
-The body of an HTTP response is always binary. In asgish the body can be:
-    
-* `bytes`: is passed unchanged.
-* `str`: is UTF-8 encoded. When it starts with '<!DOCTYPE ' or '<html>' the
-  `content-type` header defaults to `text/html`, otherwise it defaults to `text/plain`.
-* `dict`: is JSON-encoded, and the `content-type` header is set to `application/json`.
-* an async generator: must yield bytes or str,  see below.
-
-Responses can also be send in chunks, using an async generator:
-```py
-async def chunkgenerator():
-    for chunk in ['foo', 'bar', 'spam', 'eggs']:
-        yield chunk
-
-async def handler(request):
-    return 200, {}, chunkgenerator()
-```
-
-
-## API reference
-
-<!-- begin docs -->
-### class ``Request(scope, receive)``
-
-Representation of an HTTP request. An object of this class is
-passed to the request handler.
-
-**``Request.scope``** - A dict representing the raw ASGI scope. See the
-[ASGI reference](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope)
-for details.
-
-**``Request.method``** - The HTTP method (string). E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
-
-**``Request.headers``** - A dictionary representing the headers. Both keys and values are strings.
-
-**``Request.url``** - The full (unquoted) url, composed of scheme, host, port,
-path, and query parameters (string).
-
-**``Request.scheme``** - The URL scheme (string). E.g. 'http' or 'https'.
-
-**``Request.host``** - The server's host name (string).
-See also ``scope['server']`` and ``scope['client']``.
-
-**``Request.port``** - The server's port (integer).
-
-**``Request.path``** - The path part of the URL (a string, with percent escapes decoded).
-
-**``Request.querylist``** - A list with (key, value) tuples, representing the URL query parameters.
-
-**``Request.querydict``** - A dictionary representing the URL query parameters.
-
-**``Request.iter_body()``** - An async generator that iterates over the chunks in the body.
-
-**``Request.get_body(limit=10485760)``** - Coroutine to get the bytes of the body.
-If the end of the stream is not reached before the byte limit
-is reached (default 10MiB), raises an IOError.
-
-**``Request.get_json(limit=10485760)``** - Coroutine to get the body as a dict.
-If the end of the stream is not reached before the byte limit
-is reached (default 10MiB), raises an IOError.
-
-### function ``handler2asgi(handler)``
-
-Convert a request handler (a coroutine function) to an ASGI
-application, which can be served with an ASGI server, such as
-Uvicorn, Hypercorn, Daphne, etc.
-<!-- end docs -->
-
 
 ## Installation and dependencies
 
-Asgish need Python 3.6 or higher. It has no further dependencies except for
-an ASGI server. Some possible servers:
-    
-* [uvicorn](https://github.com/encode/uvicorn)
-* [hypercorn](https://gitlab.com/pgjones/hypercorn)
-* [daphne](https://github.com/django/daphne)
-* others will come ...
+Asgish need Python 3.6 or higher. To install or upgrade, run:
+```
+$ pip install asgish --upgrade
+```
 
-To install/upgrade: `pip install asgish --upgrade`
+Asgish does not directly depend on any other libraries, but it
+does need an ASGI erver to run on, like
+[uvicorn](https://github.com/encode/uvicorn),
+[hypercorn](https://gitlab.com/pgjones/hypercorn), or
+[daphne](https://github.com/django/daphne).
 
 
 ## Development
