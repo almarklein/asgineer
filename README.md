@@ -2,6 +2,7 @@
 An ASGI web framework with an ASGI-ish API 🐍🤘
 
 [![Build Status](https://api.travis-ci.org/almarklein/asgish.svg)](https://travis-ci.org/almarklein/asgish)
+[![Documentation Status](https://readthedocs.org/projects/asgish/badge/?version=latest)](https://asgish.readthedocs.io/?badge=latest)
 
 
 ## Introduction
