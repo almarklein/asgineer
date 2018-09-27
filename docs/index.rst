@@ -9,7 +9,7 @@ Welcome to the Asgish documentation!
 `Asgish <https://asgish.readthedocs.io/>`_ is a tool to write asynchronous
 web applications, using as few abstractions as possible, while still
 offering a friendly API. It does not do fancy routing; it's async
-handlers all the way down. 
+handlers all the way down.
 
 More precisely, Asgish is a Python ASGI web microframework. You don't
 need to know what ASGI is, but if you want to know more, :doc:`read here <asgi>`.
@@ -28,7 +28,7 @@ Cool stuff:
 .. toctree::
     :maxdepth: 1
     :caption: Contents:
-    
+
     start
     usage
     reference
