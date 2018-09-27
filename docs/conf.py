@@ -36,9 +36,8 @@ release = asgish.__version__
 
 language = None
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-pygments_style = "sphinx"
+pygments_style = "default"
 todo_include_todos = False
-html_show_sourcelink = False
 
 # -- Options for HTML output ----------------------------------------------
 

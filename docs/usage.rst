@@ -38,7 +38,7 @@ running the file as a script:
         # or use 'hypercorn', 'daphne', ...
 
 Alternatively, the above example can be run from the command line, using
-any ASGI server. E.g. Uvicorn:
+any ASGI server, e.g. with Uvicorn:
 
 .. code-block:: shell
 
@@ -55,12 +55,13 @@ any ASGI server. E.g. Uvicorn:
 Returning the response
 ======================
 
-With HTTP, a response really consists of three things: an integer
+An HTTP response consists of three things: an integer
 `status code <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_,
 a dictionary of `headers <https://en.wikipedia.org/wiki/List_of_HTTP_header_fields>`_,
 and the response `body <https://en.wikipedia.org/wiki/HTTP_message_body>`_.
-In Asgish you just return these three. You can also
-omit the status and/or headers. These are all equivalent:
+Many web frameworks wrap these up in a response object.
+In Asgish you just return them. You can
+omit the status and/or headers, so these are all equivalent:
     
 .. code-block:: python
 
@@ -69,24 +70,45 @@ omit the status and/or headers. These are all equivalent:
     return {}, 'hello'
     return 'hello'
 
-The body of an HTTP response is always binary. In Asgish the body can be:
-    
-* ``bytes``: is passed unchanged.
-* ``str``: is UTF-8 encoded. When it starts with ``<!DOCTYPE html>`` or ``<html>`` the
-  ``content-type`` header defaults to ``text/html``, otherwise it defaults to ``text/plain``.
-* ``dict``: is JSON-encoded, and the ``content-type`` header is set to ``application/json``.
-* an async generator: must yield ``bytes`` or ``str``,  see below.
+In the end, the body of an HTTP response is always binary, but Asgish handles some common cases for you:
 
-Responses can also be send in chunks, using an async generator:
+* A ``bytes`` object is passed unchanged.
+* A ``str`` object that starts with ``<!DOCTYPE html>`` or ``<html>`` is UTF-8 encoded,
+  and the ``content-type`` header defaults to ``text/html``.
+* Any other ``str`` object is UTF-8 encoded,
+  and the ``content-type`` header defaults to ``text/plain``.
+* A ``dict`` object is JSON-encoded,
+  and the ``content-type`` header is set to ``application/json``.
+
+Responses can also be send in chunks by returning an async generator (which
+must yield ``bytes`` or ``str`` objects). Asgish will use the generator to stream
+the body to the client:
 
 .. code-block:: python
     
     async def chunkgenerator():
         for chunk in ['foo', 'bar', 'spam', 'eggs']:
+            # ... do work or async sleep here ...
             yield chunk
     
     async def handler(request):
         return 200, {}, chunkgenerator()
+
+
+Websockets
+==========
+
+Websockets don't need a response. Instead, the request object can be used
+to send and receive messages:
+
+
+.. code-block:: python
+    
+    # Note; the websocket API is still under change
+    async def websocket_handler(request):
+        async for msg in request.read_iter():
+            await msg.send('echo ' + msg)
+        # The websocket connection is closed when this handler returns
 
 
 The request object

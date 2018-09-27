@@ -9,16 +9,16 @@ An ASGI web framework with an ASGI-ish API 🐍🤘
 [Asgish](https://asgish.readthedocs.io) is a tool to write asynchronous
 web applications, using as few abstractions as possible, while still
 offering a friendly API. It does not do fancy routing; it's async
-handlers all the way down.
-
-When running asgish on [uvicorn](https://github.com/encode/uvicorn),
-it is one of the fastest web frameworks available (it should be faster than Sanic).
+handlers all the way down. When running asgish on
+[uvicorn](https://github.com/encode/uvicorn), it is one of the fastest
+web frameworks available.
 
 
 ## Example
 
 ```py
 # example.py
+
 from asgish import handler2asgi
 
 @handler2asgi
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 You can start the server by running this script, or start it the "ASGI way", e.g.
 with Uvicorn:
 ```
-$ uvicorn example.py:main --host=localhost --port=8080
+$ uvicorn example:main --host=localhost --port=8080
 ```
 
 ## Installation and dependencies
@@ -56,8 +56,7 @@ Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests`
 
 * Use `black .` to apply Black code formatting.
 * Run `pyflakes .` to test for unused imports and more.
-* Run `python test_asgish.py --asgish_backend=xx` to run test, with `xx` 'uvicorn' or 'hypercorn'.
-* Run `pytest .` to run the same test with pytest, optionally set the ASGISH_BACKEND encironment variable.
+* Run `pytest tests` to run the tests, optionally set the ASGISH_BACKEND environment variable.
 
 
 ## License
