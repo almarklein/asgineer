@@ -20,14 +20,9 @@ import asgish
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode"]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []  # ['_templates']
+templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
-
-html_context = {
-    "display_github": True,
-    "github_url": "https://github.com/almarklein/asgish",
-}
 
 # General information about the project.
 project = "Asgish"
