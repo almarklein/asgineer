@@ -38,18 +38,16 @@ running the file as a script:
         # or use 'hypercorn', 'daphne', ...
 
 Alternatively, the above example can be run from the command line, using
-any ASGI server, e.g. with Uvicorn:
-
-.. code-block:: shell
-
-    $ uvicorn example.py:main --host=localhost --port=8080
-
-... or Hypercorn:
+any ASGI server:
 
 .. code-block:: shell
     
+    $ # Uvicorn:
+    $ uvicorn example.py:main --host=localhost --port=8080
+    $ # Hypercorn:
     $ hypercorn example.py:main --bind=localhost:8080
-
+    $ # Daphne:
+    $ daphne example:main --bind=localhost --port=8080
 
 
 Returning the response

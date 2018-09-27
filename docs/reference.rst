@@ -3,8 +3,8 @@ Asgish reference
 ================
 
 
-The handler2asgi and run functions
-==================================
+The functions
+=============
 
 .. autofunction:: asgish.handler2asgi
 
