@@ -4,8 +4,17 @@ between the user-defined handler function and the ASGI server.
 """
 
 import json
+import sys
+import logging
 import inspect
 from ._request import HttpRequest, WebsocketRequest
+
+# Initialize the logger to write errors to stderr (but can be overriden)
+logger = logging.getLogger("asgish")
+logger.addHandler(logging.StreamHandler(sys.stderr))
+logger.propagate = False
+logger.setLevel(logging.INFO)  # we actually only emit error messages atm
+
 
 # todo: Connection: Close
 # https://www.uvicorn.org/server-behavior/
@@ -37,6 +46,12 @@ class BaseApplication:
     def __init__(self, scope):
         self._scope = scope
 
+    def _error(self, msg):
+        """ Log an error message. We don't rely on the server to print
+        exceptions, since e.g. Daphne swallows them.
+        """
+        logger.error(msg)
+
     async def __call__(self, receive, send):
 
         if self._scope["type"] == "http":
@@ -46,7 +61,8 @@ class BaseApplication:
             await self._handler(request)
             return
         else:
-            raise RuntimeError(f"Dont know about ASGI type {self._scope['type']}")
+            self._error(f"Dont know about ASGI type {self._scope['type']}")
+            return
 
         # === Call handler to get the result
         try:
@@ -55,15 +71,11 @@ class BaseApplication:
 
         except Exception as err:
             # Error in the handler
-            errer_text = "Error in request handler: " + str(err)
-            try:
-                await send(
-                    {"type": "http.response.start", "status": 500, "headers": []}
-                )
-                await send({"type": "http.response.body", "body": errer_text.encode()})
-            except Exception:
-                pass
-            raise err
+            error_text = "Error in request handler: " + str(err)
+            self._error(error_text)
+            await send({"type": "http.response.start", "status": 500, "headers": []})
+            await send({"type": "http.response.body", "body": error_text.encode()})
+            return
 
         # === Process the handler output
         try:
@@ -129,10 +141,11 @@ class BaseApplication:
 
         except Exception as err:
             # Error in hanlding handler output
-            errer_text = "Error in processing handler output: " + str(err)
+            error_text = "Error in processing handler output: " + str(err)
+            self._error(error_text)
             await send({"type": "http.response.start", "status": 500, "headers": []})
-            await send({"type": "http.response.body", "body": errer_text.encode()})
-            raise err
+            await send({"type": "http.response.body", "body": error_text.encode()})
+            return
 
         # === Send response
         start = {"type": "http.response.start", "status": status, "headers": rawheaders}
@@ -162,16 +175,17 @@ class BaseApplication:
                 )
 
             except Exception as err:
+                error_text = "Error in chunked response: " + str(err)
+                self._error(error_text)
                 if not start_is_sent:
-                    errer_text = "Error in chunked response: " + str(err)
                     await send(
                         {"type": "http.response.start", "status": 500, "headers": []}
                     )
                     await send(
-                        {"type": "http.response.body", "body": errer_text.encode()}
+                        {"type": "http.response.body", "body": error_text.encode()}
                     )
-                else:  # end-of-body has also not been send
+                else:  # end-of-body has not been send
                     await send(
                         {"type": "http.response.body", "body": b"", "more_body": False}
                     )
-                raise err
+                return

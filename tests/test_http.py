@@ -433,6 +433,7 @@ def test_errors():
     assert "error in request handler" in res.content.decode().lower()
     assert "woops" in res.content.decode()
     assert "woops" in p.out
+    assert p.out.count("woops") == 1
     assert "xx-custom" not in res.headers
 
     # Exception in handler with chunked body
