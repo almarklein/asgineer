@@ -16,8 +16,9 @@ index = """
     <a href='/foo.bin'>Bytes</a><br>
     <a href='/foo.txt'>Text</a><br>
     <a href='/api/items'>JSON api</a><br>
-    <a href='/chunks'>chunks</a><br>
     <a href='/redirect?url=http://python.org'>redirect</a><br>
+    <a href='/error'>error</a><br>
+    <a href='/chunks'>chunks</a><br>
 </body>
 </html>
 """.lstrip()
@@ -28,18 +29,26 @@ async def main(request):
 
     if not request.path.rstrip("/"):
         return index  # Asgish sets the text/html content type
-    elif request.path.endswith(".txt"):
-        return await text_handler(request)
     elif request.path.endswith(".bin"):
         return await bytes_handler(request)
+    elif request.path.endswith(".txt"):
+        return await text_handler(request)
     elif request.path.startswith("/api/"):
         return await json_api(request)
     elif request.path == "/redirect":
         return await redirect(request)
+    elif request.path == "/error":
+        return await error(request)
     elif request.path == "/chunks":
         return await chunks(request)
     else:
         return 404, {}, f"404 not found {request.path}"
+
+
+async def bytes_handler(request):
+    """ Returning bytes; a response in its purest form.
+    """
+    return b"x" * 42
 
 
 async def text_handler(request):
@@ -48,12 +57,6 @@ async def text_handler(request):
     content-type because it starts with "<!DOCTYPE html>" or "<html>".
     """
     return "Hello world"
-
-
-async def bytes_handler(request):
-    """ Returning bytes; a response in its purest form.
-    """
-    return b"x" * 42
 
 
 async def json_api(request):
@@ -78,6 +81,12 @@ async def redirect(request):
         return 307, {"location": url}, "Redirecting"
     else:
         return 500, {}, "specify the URL using a query param"
+
+
+async def error(request):
+    """ Handler with a deliberate error.
+    """
+    1 / 0
 
 
 async def chunks(request):
