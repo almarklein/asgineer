@@ -29,10 +29,10 @@ matrix:
           env: ASGISH_SERVER=daphne
 
 before_install:
-    - SRC_DIR=$(pwd)
+    - SRC_DIR=$(pwd);
 
 install:
-    - cd ${SRC_DIR}
+    - cd ${SRC_DIR};
     - if [ "${TEST_STYLE}" == "1" ]; then
         pip install black pyflakes;
       else
@@ -51,12 +51,12 @@ install:
 
 script:
     - cd ${SRC_DIR};
-    - python -c "import sys; print(sys.version, '\n', sys.prefix)"
+    - python -c "import sys; print(sys.version, '\n', sys.prefix)";
     - if [ "${TEST_STYLE}" == "1" ]; then
         black --check .;
         pyflakes .;
       else
-        pytest -v .
+        pytest -v .;
       fi;
 
 after_success:
