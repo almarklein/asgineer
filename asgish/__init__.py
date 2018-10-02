@@ -1,5 +1,5 @@
 """
-asgish - An ASGI web framework with an ASGI-ish API
+Asgish - An ASGI web framework with an ASGI-ish API
 
 Asgish is a tool to write asynchronous web applications, using as few
 abstractions as possible, while still offering a friendly API. It does not

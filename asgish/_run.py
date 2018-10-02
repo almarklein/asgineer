@@ -5,7 +5,7 @@ This module implements a ``run()`` function to start an ASGI server of choice.
 
 def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
     """ Programatic API to run the given ASGI app with the given ASGI server.
-    (This works for any ASGI app, not just asgish apps.)
+    (This works for any ASGI app, not just Asgish apps.)
     
     Arguments:
     

@@ -1,5 +1,5 @@
 """
-Simple asgish hanler to show information about the incoming request.
+Simple Asgish hanler to show information about the incoming request.
 """
 
 from asgish import handler2asgi, run
