@@ -18,24 +18,46 @@ branches:
 matrix:
     include:
         - python: "3.6"
+          env: TEST_STYLE=1
+        - python: "3.6"
+          env: ASGISH_SERVER=uvicorn
         - python: "3.7"
+          env: ASGISH_SERVER=uvicorn
+        - python: "3.7"
+          env: ASGISH_SERVER=hypercorn
+        - python: "3.7"
+          env: ASGISH_SERVER=daphne
 
 before_install:
     - SRC_DIR=$(pwd)
 
 install:
     - cd ${SRC_DIR}
-    - pip install uvicorn hypercorn;
-    - pip install pytest pytest-cov black pyflakes requests;
-    - python setup.py install;
+    - if [ "${TEST_STYLE}" == "1" ]; then
+        pip install black pyflakes;
+      else
+        pip install pytest pytest-cov requests;
+        python setup.py install;
+      fi;
+    - if [ "${ASGISH_SERVER}" == "uvicorn" ]; then
+        pip install uvicorn;
+      fi;
+    - if [ "${ASGISH_SERVER}" == "hypercorn" ]; then
+        pip install hypercorn;
+      fi;
+    - if [ "${ASGISH_SERVER}" == "daphne" ]; then
+        pip install daphne;
+      fi;
 
-script: 
+script:
     - cd ${SRC_DIR};
     - python -c "import sys; print(sys.version, '\n', sys.prefix)"
-    - black --check .
-    - pyflakes .
-    - ASGISH_SERVER=uvicorn pytest -v .
-    - ASGISH_SERVER=hypercorn pytest -v .
+    - if [ "${TEST_STYLE}" == "1" ]; then
+        black --check .;
+        pyflakes .;
+      else
+        pytest -v .
+      fi;
 
 after_success:
     - echo SUCCESS!
