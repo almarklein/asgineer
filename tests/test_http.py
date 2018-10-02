@@ -16,29 +16,32 @@ url = f"http://127.0.0.1:{port}"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+testfilename = os.path.join(THIS_DIR, "asgish_test.py")
 
 START_CODE = f"""
+import os
 import sys
+import time
 import threading
 import _thread
+
 def closer():
-    while sys.stdin.readline():
-        pass
+    while os.path.isfile(__file__):
+        time.sleep(0.01)
     _thread.interrupt_main()
-threading.Thread(target=closer).start()
 
-sys.stdout.write("START\\n")
-sys.stdout.flush()
-
-run("__main__:app", "asgiservername", "localhost:{port}", log_level="warning")
-
-sys.stdout.flush()
-sys.exit(0)
+if __name__ == "__main__":
+    
+    threading.Thread(target=closer).start()
+    sys.stdout.write("START\\n")
+    sys.stdout.flush()
+    run("__main__:app", "asgiservername", "localhost:{port}", log_level="warning")
+    sys.exit(0)
 """
 
 
 def getbackend():
-    return os.environ.get("ASGISH_SERVER", "hypercorn").lower()
+    return os.environ.get("ASGISH_SERVER", "uvicorn").lower()
 
 
 class ServerProcess:
@@ -53,16 +56,15 @@ class ServerProcess:
 
     def __enter__(self):
         print(".", end="")
-        # Prepare code and command
+        # Prepare code
         start_code = START_CODE.replace("asgiservername", getbackend())
-        cmd = [sys.executable, "-c", self._handler_code + start_code]
-        # Start subprocess
+        with open(testfilename, "wb") as f:
+            f.write((self._handler_code + start_code).encode())
+        # Start subprocess. Don't use stdin; it breaks multiprocessing somehow!
         self._p = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
+            [sys.executable, testfilename],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            cwd=THIS_DIR,
         )
         # Wait for process to start, and make sure it is not dead
         while (
@@ -70,22 +72,23 @@ class ServerProcess:
             and self._p.stdout.readline().decode().strip() != "START"
         ):
             time.sleep(0.01)
+        time.sleep(0.2)  # Wait a bit more, to be sure the server is up
         if self._p.poll() is not None:
             raise RuntimeError(
                 "Process failed to start!\n" + self._p.stdout.read().decode()
             )
-        # Then wait a bit more, to be sure the server is up
-        time.sleep(0.2)
         print(".", end="")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print(".", end="")
+        print("." if exc_value is None else "e", end="")
         # Ask process to stop
-        time.sleep(0.1)  # Give server time to recover (hypercorn seems to need that)
-        self._p.stdin.close()
+        try:
+            os.remove(testfilename)
+        except Exception:
+            pass
 
-        # Force it to stop as needed
+        # Force it to stop if needed
         for i in range(10):
             etime = time.time() + 0.5
             while self._p.poll() is None and time.time() < etime:
@@ -96,9 +99,17 @@ class ServerProcess:
         else:
             raise RuntimeError("Runaway server process failed to terminate!")
 
-        # Get output
-        self.out = self._p.stdout.read().decode()
-        print(".")
+        # Get output, remove stuff that we dont need
+        lines = self._p.stdout.read().decode(errors="ignore").splitlines()
+        self.out = "\n".join(
+            line for line in lines if not line.startswith("Running on http")
+        )
+
+        if exc_value is None:
+            print(".")
+        else:
+            print("  Process output:")
+            print(self.out)
 
 
 def test_backend_reporter(capsys=None):
@@ -182,7 +193,7 @@ def test_normal_usage():
 
     # Daphne capitalizes the header keys, hypercorn aims at lowercase
     refheaders = {"content-type", "content-length", "xx-foo"}
-    if getbackend() == "uvicorn":
+    if getbackend() not in "daphne":
         refheaders.update({"server", "date"})
     assert set(k.lower() for k in res.headers.keys()) == refheaders
     assert res.headers["content-type"] == "text/plain"
@@ -575,8 +586,6 @@ if __name__ == "__main__":
             print(f"Running {func.__name__} ...")
             func()
     print("Done")
-
-    # run(handler_err4)
 
     # with ServerProcess(handler_err2) as p:
     #     time.sleep(10)
