@@ -46,9 +46,9 @@ $ pip install asgish --upgrade
 
 Asgish does not directly depend on any other libraries, but it
 does need an ASGI erver to run on, like
-[uvicorn](https://github.com/encode/uvicorn),
-[hypercorn](https://gitlab.com/pgjones/hypercorn), or
-[daphne](https://github.com/django/daphne).
+[Uvicorn](https://github.com/encode/uvicorn),
+[Hypercorn](https://gitlab.com/pgjones/hypercorn), or
+[Daphne](https://github.com/django/daphne).
 
 
 ## Development
@@ -57,7 +57,7 @@ Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests`
 
 * Use `black .` to apply Black code formatting.
 * Run `pyflakes .` to test for unused imports and more.
-* Run `pytest tests` to run the tests, optionally set the ASGISH_BACKEND environment variable.
+* Run `pytest tests` to run the tests, optionally set the `ASGISH_SERVER` environment variable.
 
 
 ## License
