@@ -11,7 +11,7 @@ An ASGI web framework with an ASGI-ish API 🐍🤘
 web applications, using as few abstractions as possible, while still
 offering a friendly API. It does not do fancy routing; it's async
 handlers all the way down. When running asgish on
-[uvicorn](https://github.com/encode/uvicorn), it is one of the fastest
+[Uvicorn](https://github.com/encode/uvicorn), it is one of the fastest
 web frameworks available.
 
 
