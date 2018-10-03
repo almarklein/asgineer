@@ -101,8 +101,9 @@ class ServerProcess:
 
         # Get output, remove stuff that we dont need
         lines = self._p.stdout.read().decode(errors="ignore").splitlines()
+        skip = ("Running on http", "Task was destroyed but", "task: <Task pending coro")
         self.out = "\n".join(
-            line for line in lines if not line.startswith("Running on http")
+            line for line in lines if not line.startswith(skip)
         )
 
         if exc_value is None:
