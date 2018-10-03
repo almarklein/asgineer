@@ -43,7 +43,7 @@ install:
         pip install uvicorn;
       fi;
     - if [ "${ASGISH_SERVER}" == "hypercorn" ]; then
-        pip install hypercorn;
+        pip install https://gitlab.com/almarklein/hypercorn/-/archive/windows/hypercorn-windows.zip;
       fi;
     - if [ "${ASGISH_SERVER}" == "daphne" ]; then
         pip install daphne;
