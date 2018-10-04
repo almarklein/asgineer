@@ -95,7 +95,7 @@ class ServerProcess:
             and self._p.stdout.readline().decode().strip() != "START"
         ):
             time.sleep(0.01)
-        time.sleep(0.2)  # Wait a bit more, to be sure the server is up
+        time.sleep(0.4)  # Wait a bit more, to be sure the server is up
         if self._p.poll() is not None:
             raise RuntimeError(
                 "Process failed to start!\n" + self._p.stdout.read().decode()
