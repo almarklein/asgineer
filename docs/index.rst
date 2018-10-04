@@ -6,11 +6,13 @@
 Welcome to the Asgish documentation!
 ====================================
 
-`Asgish <https://asgish.readthedocs.io/>`_ is a tool to write
-asynchronous web applications, using as few abstractions as possible,
-while still offering a friendly API. It does not do fancy routing; it's
-async handlers all the way down. More precisely, Asgish is a Python
-ASGI web microframework.
+`Asgish <https://asgish.readthedocs.io/>`_ is a tool to write asynchronous
+web applications, using as few abstractions as possible, while still
+offering a friendly API. There is no fancy routing; you write an async
+request handler, and delegate to other handlers as needed.
+
+More precisely, Asgish is a Python ASGI web microframework. And it's so thin
+that it still feels a bit ASGI-ish ...
 
 Cool stuff:
 
@@ -20,7 +22,7 @@ Cool stuff:
   of the fastest web frameworks available.
 * You can write your web app with Asgish, and switch the underlying (ASGI) server
   without having to change your code.
-* Asgi is so small that it fits in the palm of your hand!
+* Asgish is so small that it fits in the palm of your hand!
 
 
 .. toctree::
@@ -28,6 +30,6 @@ Cool stuff:
     :caption: Contents:
 
     start
-    usage
+    guide
     reference
     asgi

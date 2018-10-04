@@ -1,18 +1,20 @@
-# asgish
-An ASGI web framework with an ASGI-ish API 🐍🤘
+# Asgish
+A really thin ASGI web framework 🐍🤘
 
 [![Build Status](https://api.travis-ci.org/almarklein/asgish.svg)](https://travis-ci.org/almarklein/asgish)
 [![Documentation Status](https://readthedocs.org/projects/asgish/badge/?version=latest)](https://asgish.readthedocs.io/?badge=latest)
-
+[![Package Version](https://badge.fury.io/py/asgish.svg)](https://pypi.org/project/asgish)
+    
 
 ## Introduction
 
 [Asgish](https://asgish.readthedocs.io) is a tool to write asynchronous
 web applications, using as few abstractions as possible, while still
-offering a friendly API. It does not do fancy routing; it's async
-handlers all the way down. When running asgish on
-[Uvicorn](https://github.com/encode/uvicorn), it is one of the fastest
-web frameworks available.
+offering a friendly API. There is no fancy routing; you write an async
+request handler, and delegate to other handlers as needed.
+
+When running asgish on [Uvicorn](https://github.com/encode/uvicorn),
+it is one of the fastest web frameworks available.
 
 
 ## Example
@@ -28,7 +30,7 @@ async def main(request):
 
 if __name__ == '__main__':
     from asgish import run
-    run(main, 'hypercorn', 'localhost:8080')
+    run(main, 'uvicorn', 'localhost:8080')
 ```
 
 You can start the server by running this script, or start it the "ASGI way", e.g.
@@ -53,7 +55,7 @@ does need an ASGI erver to run on, like
 
 ## Development
 
-Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests`
+Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests autobahn`
 
 * Use `black .` to apply Black code formatting.
 * Run `pyflakes .` to test for unused imports and more.
