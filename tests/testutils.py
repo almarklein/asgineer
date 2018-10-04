@@ -11,7 +11,7 @@ URL = f"http://127.0.0.1:{PORT}"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-testfilename = os.path.join(THIS_DIR, "asgish_test.py")
+testfilename = os.path.join(THIS_DIR, "asgish_test_script.py")
 
 START_CODE = f"""
 import os
@@ -73,8 +73,8 @@ class ServerProcess:
 
     def __init__(self, handler):
         self._handler_code = _dedent(inspect.getsource(handler))
-        self._handler_code += "\nimport asgish\n"
-        self._handler_code += f"\napp = to_asgi({handler.__name__})\n"
+        self._handler_code += "\n\nimport asgish\n"
+        self._handler_code += f"\napp = asgish.to_asgi({handler.__name__})\n"
         self.out = ""
 
     def __enter__(self):
