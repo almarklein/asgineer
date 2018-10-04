@@ -154,19 +154,6 @@ CONNECTED = 1
 DISCONNECTED = 2
 
 
-class WebSocketDisconnect(Exception):
-    def __init__(self, code=1000):
-        self.code = code
-
-
-class WebSocketClose:
-    def __init__(self, code=1000):
-        self.code = code
-
-    async def __call__(self, receive, send):
-        await send({"type": "websocket.close", "code": self.code})
-
-
 class WebsocketRequest(BaseRequest):
     """ Representation of a websocket request. An object of this class is
     passed to the request handler.
@@ -183,8 +170,7 @@ class WebsocketRequest(BaseRequest):
         self._application_state = CONNECTING
 
     async def raw_receive(self):
-        """
-        Receive ASGI websocket messages, ensuring valid state transitions.
+        """ Receive an ASGI websocket message, ensuring valid state transitions.
         """
         if self._client_state == CONNECTING:
             message = await self._receive()
@@ -205,8 +191,7 @@ class WebsocketRequest(BaseRequest):
             )
 
     async def raw_send(self, message):
-        """
-        Send ASGI websocket messages, ensuring valid state transitions.
+        """ Send a ASGI websocket message, ensuring valid state transitions.
         """
         if self._application_state == CONNECTING:
             message_type = message["type"]
@@ -226,6 +211,9 @@ class WebsocketRequest(BaseRequest):
             raise RuntimeError('Cannot call "send" once a close message has been sent.')
 
     async def accept(self, subprotocol=None):
+        """ Async function to accept the websocket connection. This needs to be called
+        before any sending or receiving.
+        """
         if self._client_state == CONNECTING:
             # If we haven't yet seen the 'connect' message, then wait for it first.
             await self.raw_receive()
@@ -233,35 +221,44 @@ class WebsocketRequest(BaseRequest):
 
     def _raise_on_disconnect(self, message):
         if message["type"] == "websocket.disconnect":
-            raise WebSocketDisconnect(message["code"])
+            raise IOError("Websocket disconnect", message["code"])
 
     async def receive_iter(self):
+        """ Async generator to iterate over incoming messaged as long
+        as the connection is not closed. Each message can be a bytes or str.
+        """
         while True:
             message = await self.raw_receive()
             if message["type"] == "websocket.disconnect":
                 return
-            yield message["bytes"]
+            # ASGI specifies that either bytes or text is present
+            yield message.get("bytes", None) or message.get("text", b"")
 
-    async def receive_text(self):
+    async def receive(self):
+        """ Async function to receive one websocket message. The result
+        can be bytes or str. Raises IOError when a disconnect-message is received.
+        """
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
         self._raise_on_disconnect(message)
-        return message["text"]
+        return message.get("bytes", None) or message.get("text", b"")
 
-    async def receive_bytes(self):
-        assert self._application_state == CONNECTED
-        message = await self.raw_receive()
-        self._raise_on_disconnect(message)
-        return message["bytes"]
+    # todo: maybe receive_bytes and/or receive_text?
 
     async def receive_json(self):
-        assert self._application_state == CONNECTED
-        message = await self.raw_receive()
-        self._raise_on_disconnect(message)
-        encoded = message["bytes"]
-        return json.loads(encoded.decode())
+        """ Async convenience function to receive a JSON message. Works
+        on binary as well as str messages, as long as its JSON encoded.
+        """
+        message = await self.receive()
+        if isinstance(message, bytes):
+            message = message.decode()
+        return json.loads(message)
 
     async def send(self, value):
+        """ Async function to send a websocket message. The value can
+        be bytes, str or dict. In the latter case, it is encoded to
+        bytes (with JSON and UTF-8).
+        """
         if isinstance(value, bytes):
             await self.raw_send({"type": "websocket.send", "bytes": value})
         elif isinstance(value, str):
@@ -272,15 +269,7 @@ class WebsocketRequest(BaseRequest):
         else:
             raise TypeError("Can only send bytes/str/dict.")
 
-    async def send_text(self, data):
-        await self.raw_send({"type": "websocket.send", "text": data})
-
-    async def send_bytes(self, data):
-        await self.raw_send({"type": "websocket.send", "bytes": data})
-
-    async def send_json(self, data):
-        encoded = json.dumps(data).encode("utf-8")
-        await self.raw_send({"type": "websocket.send", "bytes": encoded})
-
     async def close(self, code=1000):
+        """ Async function to close the websocket connection.
+        """
         await self.raw_send({"type": "websocket.close", "code": code})

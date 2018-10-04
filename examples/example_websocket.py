@@ -17,7 +17,7 @@ Open console, and use "ws.send('x')" to send a message to the server.
 window.onload = function() {
     window.ws = new WebSocket('ws://' + window.location.host + '/ws');
     window.ws.onmessage = function(m) {
-        console.log(m);
+        console.log(m.data);
     }
     window.ws.onerror = function (e) {
         console.log(e);
@@ -48,17 +48,14 @@ async def websocket_handler(request):
     assert request.scope["type"] == "websocket", "Expected ws"
     print("request", request)
 
-    await request.accept()  # todo: server part can do this?
+    await request.accept()
     await request.send("hello!")
 
-    async def waiter():
-        async for m in request.receive_iter():
-            print(m)
-        print("done")
+    async for m in request.receive_iter():
+        await request.send("echo: " + str(m))
+        print(m)
 
-    import asyncio
-
-    await asyncio.create_task(waiter())
+    print("done")
     # The moment that we return, the websocket will be closed
     # (if the ASGI server behaves correctly)
 
