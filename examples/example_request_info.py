@@ -2,10 +2,10 @@
 Simple Asgish hanler to show information about the incoming request.
 """
 
-from asgish import handler2asgi, run
+import asgish
 
 
-@handler2asgi
+@asgish.to_asgi
 async def main(request):
 
     lines = [
@@ -23,4 +23,4 @@ async def main(request):
 
 
 if __name__ == "__main__":
-    run(main, "uvicorn", "localhost:80", log_level="info")
+    asgish.run(main, "uvicorn", "localhost:80", log_level="info")

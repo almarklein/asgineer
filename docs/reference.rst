@@ -9,7 +9,7 @@ as well as a description of Asgish more implicit API.
 The functions
 =============
 
-.. autofunction:: asgish.handler2asgi
+.. autofunction:: asgish.to_asgi
 
 .. autofunction:: asgish.run
 

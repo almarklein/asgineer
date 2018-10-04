@@ -13,7 +13,7 @@ web applications, using as few abstractions as possible, while still
 offering a friendly API. There is no fancy routing; you write an async
 request handler, and delegate to other handlers as needed.
 
-When running asgish on [Uvicorn](https://github.com/encode/uvicorn),
+When running Asgish on [Uvicorn](https://github.com/encode/uvicorn),
 it is one of the fastest web frameworks available.
 
 
@@ -22,15 +22,14 @@ it is one of the fastest web frameworks available.
 ```py
 # example.py
 
-from asgish import handler2asgi
+import asgish
 
-@handler2asgi
+@asgish.to_asgi
 async def main(request):
     return f"<html>You requested <b>{request.path}</b></html>"
 
 if __name__ == '__main__':
-    from asgish import run
-    run(main, 'uvicorn', 'localhost:8080')
+    asgish.run(main, 'uvicorn', 'localhost:8080')
 ```
 
 You can start the server by running this script, or start it the "ASGI way", e.g.

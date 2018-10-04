@@ -30,7 +30,7 @@ if __name__ == "__main__":
     threading.Thread(target=closer).start()
     sys.stdout.write("START\\n")
     sys.stdout.flush()
-    run("__main__:app", "asgiservername", "localhost:{PORT}", log_level="warning")
+    asgish.run("__main__:app", "asgiservername", "localhost:{PORT}", log_level="warning")
     sys.stdout.flush()
     sys.exit(0)
 """
@@ -73,8 +73,8 @@ class ServerProcess:
 
     def __init__(self, handler):
         self._handler_code = _dedent(inspect.getsource(handler))
-        self._handler_code += "\nfrom asgish import handler2asgi, run\n"
-        self._handler_code += f"\napp = handler2asgi({handler.__name__})\n"
+        self._handler_code += "\nimport asgish\n"
+        self._handler_code += f"\napp = to_asgi({handler.__name__})\n"
         self.out = ""
 
     def __enter__(self):

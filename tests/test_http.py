@@ -1,7 +1,7 @@
 import requests
 import pytest
 
-from asgish import handler2asgi
+import asgish
 
 from testutils import URL, ServerProcess, get_backend
 
@@ -427,10 +427,10 @@ async def handler_wrong_use2(request):
 def test_wrong_use():
 
     with pytest.raises(TypeError):
-        handler2asgi(handler_wrong_use1)
+        asgish.to_asgi(handler_wrong_use1)
 
     with pytest.raises(TypeError):
-        handler2asgi(handler_wrong_use2)
+        asgish.to_asgi(handler_wrong_use2)
 
 
 ##
