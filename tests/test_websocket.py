@@ -136,7 +136,6 @@ def test_websocket_echo():
     async def handle_ws(request):
         await request.accept()
         async for m in request.receive_iter():
-            print(m)
             if m == "SERVER_STOP":
                 break
             else:
