@@ -50,7 +50,7 @@ async def handler5(request):
 
 
 async def handler6(request):
-    return 400, "ho!"
+    return 400, "ho!"  # Invalid
 
 
 async def handler7(request):
@@ -132,14 +132,14 @@ def test_output_shapes():
     assert res.content.decode() == "ho!"
     assert not p.out
 
-    # Two element tuple (two forms)
+    # Two element tuple (two forms, one is flawed)
 
     with ServerProcess(handler6) as p:
         res = requests.get(URL)
 
-    assert res.status_code == 400
-    assert res.content.decode() == "ho!"
-    assert not p.out
+    assert res.status_code == 500
+    assert "Headers must be a dict" in res.content.decode()
+    assert "Headers must be a dict" in p.out
 
     with ServerProcess(handler7) as p:
         res = requests.get(URL)
