@@ -15,7 +15,7 @@ async def handle_request_object1(request):
         bodystring=(await request.get_body()).decode(),
         json=await request.get_json(),
     )
-    return 200, d
+    return d
 
 
 def test_request_object():
