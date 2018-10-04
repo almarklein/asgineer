@@ -56,15 +56,39 @@ class BaseApplication:
 
         if self._scope["type"] == "http":
             request = HttpRequest(self._scope, receive)
+            await self._handle_http(request, receive, send)
         elif self._scope["type"] == "websocket":
             request = WebsocketRequest(self._scope, receive, send)
-            await self._handler(request)
-            return
+            await self._handle_websocket(request, receive, send)
         else:
             self._error(f"Dont know about ASGI type {self._scope['type']}")
+
+    async def _handle_websocket(self, request, receive, send):
+
+        # === Call websocket handler
+        try:
+
+            result = await self._handler(request)
+
+        except Exception as err:
+            # Error in the handler
+            error_text = "Error in websocket handler: " + str(err)
+            self._error(error_text)
             return
 
-        # === Call handler to get the result
+        # === Process the handler output
+        if result is not None:
+            # It's likely that the user is misunderstanding how ws handlers work.
+            # Let's be strict and give directions.
+            error_text = (
+                "A websocket handler should return None; "
+                + "use request.send() and request.receive() to communicate."
+            )
+            self._error(error_text)
+
+    async def _handle_http(self, request, receive, send):
+
+        # === Call request handler to get the result
         try:
 
             result = await self._handler(request)
