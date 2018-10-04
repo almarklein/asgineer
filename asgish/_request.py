@@ -21,7 +21,7 @@ class BaseRequest:
     @property
     def scope(self):
         """ A dict representing the raw ASGI scope. See the
-        [ASGI reference](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope)
+        `ASGI reference <https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope>`_
         for details.
         """
         return self._scope
@@ -81,7 +81,7 @@ class BaseRequest:
 
     @property
     def querylist(self):
-        """ A list with (key, value) tuples, representing the URL query parameters.
+        """ A list with ``(key, value)`` tuples, representing the URL query parameters.
         """
         if self._querylist is None:
             q = self._scope["query_string"]  # bytes, not percent decoded
@@ -109,7 +109,7 @@ class HttpRequest(BaseRequest):
         self._body = None
 
     async def iter_body(self):
-        """ An async generator that iterates over the chunks in the body.
+        """ Async generator that iterates over the chunks in the body.
         """
         if self._iter_done:
             raise IOError("Request body was already consumed.")
@@ -124,7 +124,7 @@ class HttpRequest(BaseRequest):
                 raise IOError("Client disconnected")
 
     async def get_body(self, limit=10 * 2 ** 20):
-        """ Coroutine to get the bytes of the body.
+        """ Async function to get the bytes of the body.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an IOError.
         """
@@ -141,7 +141,7 @@ class HttpRequest(BaseRequest):
         return self._body
 
     async def get_json(self, limit=10 * 2 ** 20):
-        """ Coroutine to get the body as a dict.
+        """ Async function to get the body as a dict.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an IOError.
         """
@@ -170,7 +170,8 @@ class WebsocketRequest(BaseRequest):
         self._application_state = CONNECTING
 
     async def raw_receive(self):
-        """ Receive an ASGI websocket message, ensuring valid state transitions.
+        """ Async function to receive an ASGI websocket message,
+        ensuring valid state transitions.
         """
         if self._client_state == CONNECTING:
             message = await self._receive()
@@ -191,7 +192,8 @@ class WebsocketRequest(BaseRequest):
             )
 
     async def raw_send(self, message):
-        """ Send a ASGI websocket message, ensuring valid state transitions.
+        """ Async function tp send a ASGI websocket message,
+        ensuring valid state transitions.
         """
         if self._application_state == CONNECTING:
             message_type = message["type"]
@@ -211,8 +213,8 @@ class WebsocketRequest(BaseRequest):
             raise RuntimeError('Cannot call "send" once a close message has been sent.')
 
     async def accept(self, subprotocol=None):
-        """ Async function to accept the websocket connection. This needs to be called
-        before any sending or receiving.
+        """ Async function to accept the websocket connection.
+        This needs to be called before any sending or receiving.
         """
         if self._client_state == CONNECTING:
             # If we haven't yet seen the 'connect' message, then wait for it first.
@@ -225,7 +227,7 @@ class WebsocketRequest(BaseRequest):
 
     async def receive_iter(self):
         """ Async generator to iterate over incoming messaged as long
-        as the connection is not closed. Each message can be a bytes or str.
+        as the connection is not closed. Each message can be a ``bytes`` or ``str``.
         """
         while True:
             message = await self.raw_receive()
@@ -235,8 +237,8 @@ class WebsocketRequest(BaseRequest):
             yield message.get("bytes", None) or message.get("text", b"")
 
     async def receive(self):
-        """ Async function to receive one websocket message. The result
-        can be bytes or str. Raises IOError when a disconnect-message is received.
+        """ Async function to receive one websocket message. The result can be
+        ``bytes`` or ``str``. Raises ``IOError`` when a disconnect-message is received.
         """
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
@@ -247,7 +249,7 @@ class WebsocketRequest(BaseRequest):
 
     async def receive_json(self):
         """ Async convenience function to receive a JSON message. Works
-        on binary as well as str messages, as long as its JSON encoded.
+        on binary as well as text messages, as long as its JSON encoded.
         """
         message = await self.receive()
         if isinstance(message, bytes):
@@ -256,8 +258,8 @@ class WebsocketRequest(BaseRequest):
 
     async def send(self, value):
         """ Async function to send a websocket message. The value can
-        be bytes, str or dict. In the latter case, it is encoded to
-        bytes (with JSON and UTF-8).
+        be ``bytes``, ``str`` or ``dict``. In the latter case, the message is
+        encoded with JSON (and UTF-8).
         """
         if isinstance(value, bytes):
             await self.raw_send({"type": "websocket.send", "bytes": value})
