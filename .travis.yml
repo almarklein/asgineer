@@ -36,7 +36,7 @@ install:
     - if [ "${TEST_STYLE}" == "1" ]; then
         pip install black pyflakes;
       else
-        pip install pytest pytest-cov requests;
+        pip install pytest pytest-cov requests autobahn;
         python setup.py install;
       fi;
     - if [ "${ASGISH_SERVER}" == "uvicorn" ]; then
