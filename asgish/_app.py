@@ -75,6 +75,15 @@ class BaseApplication:
             error_text = "Error in websocket handler: " + str(err)
             self._error(error_text)
             return
+        finally:
+            # The ASGI spec specifies that ASGI servers should close
+            # the ws connection when the task ends. At the time of
+            # writing (04-10-2018), only Uvicorn does this.
+            # TODO: Remove this once all servers behave correctly
+            try:
+                await request.close()
+            except Exception:
+                pass
 
         # === Process the handler output
         if result is not None:
