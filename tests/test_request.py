@@ -1,11 +1,11 @@
 import json
 
-import pytest
+import requests
 
 from testutils import URL, ServerProcess
 
 
-async def handle_request_object2(request):
+async def handle_request_object1(request):
     assert request.scope["method"] == request.method
     d = dict(
         url=request.url,
@@ -20,7 +20,7 @@ async def handle_request_object2(request):
 
 def test_request_object():
 
-    with ServerProcess(handle_request_object2) as p:
+    with ServerProcess(handle_request_object1) as p:
         res = requests.post(URL + "/xx/yy?arg=3&arg=4", b'{"foo": 42}')
 
     assert res.status_code == 200

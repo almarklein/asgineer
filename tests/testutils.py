@@ -31,6 +31,7 @@ if __name__ == "__main__":
     sys.stdout.write("START\\n")
     sys.stdout.flush()
     run("__main__:app", "asgiservername", "localhost:{PORT}", log_level="warning")
+    sys.stdout.flush()
     sys.exit(0)
 """
 
@@ -53,12 +54,25 @@ def run_tests(scope):
     print("Done")
 
 
+def _dedent(code):
+    lines = code.splitlines()
+    mindent = 100
+    for line in lines:
+        line = line.rstrip()
+        line_ = line.lstrip()
+        if line_:
+            mindent = min(mindent, len(line) - len(line_))
+    for i in range(len(lines)):
+        lines[i] = lines[i][mindent:]
+    return "\n".join(lines)
+
+
 class ServerProcess:
     """ Helper class to run a handler in a subprocess, as a context manager.
     """
 
     def __init__(self, handler):
-        self._handler_code = inspect.getsource(handler)
+        self._handler_code = _dedent(inspect.getsource(handler))
         self._handler_code += "\nfrom asgish import handler2asgi, run\n"
         self._handler_code += f"\napp = handler2asgi({handler.__name__})\n"
         self.out = ""
