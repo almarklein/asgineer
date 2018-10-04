@@ -140,6 +140,7 @@ def test_websocket_echo():
                 break
             else:
                 await request.send(m)
+        sys.stdout.flush()
 
     send = "hi", "there", "SERVER_STOP"
 

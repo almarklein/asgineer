@@ -234,7 +234,7 @@ class WebsocketRequest(BaseRequest):
             if message["type"] == "websocket.disconnect":
                 return
             # ASGI specifies that either bytes or text is present
-            yield message.get("bytes", None) or message.get("text", b"")
+            yield message.get("bytes", None) or message.get("text", None) or b""
 
     async def receive(self):
         """ Async function to receive one websocket message. The result can be
@@ -243,7 +243,7 @@ class WebsocketRequest(BaseRequest):
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
         self._raise_on_disconnect(message)
-        return message.get("bytes", None) or message.get("text", b"")
+        return message.get("bytes", None) or message.get("text", None) or b""
 
     # todo: maybe receive_bytes and/or receive_text?
 
