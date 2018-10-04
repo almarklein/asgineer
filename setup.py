@@ -42,7 +42,7 @@ THIS_DIR = os.path.dirname(__file__)
 
 # Define name and description
 name = "asgish"
-description = "An ASGI web framework with an ASGI-ish API"
+description = "A really thin ASGI web framework"
 
 # Get version and docstring (i.e. long description)
 version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish", "__init__.py"))
