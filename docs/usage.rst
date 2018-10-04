@@ -57,14 +57,13 @@ An HTTP response consists of three things: an integer
 `status code <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_,
 a dictionary of `headers <https://en.wikipedia.org/wiki/List_of_HTTP_header_fields>`_,
 and the response `body <https://en.wikipedia.org/wiki/HTTP_message_body>`_.
-Many web frameworks wrap these up in a response object.
-In Asgish you just return them. You can
-omit the status and/or headers, so these are all equivalent:
-    
+Many web frameworks wrap these up in a response object. In Asgish you
+just return them. You can also return just the body, or the body and
+headers; these are all equivalent:
+
 .. code-block:: python
 
     return 200, {}, 'hello'
-    return 200, 'hello'
     return {}, 'hello'
     return 'hello'
 

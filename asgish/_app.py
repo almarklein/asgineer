@@ -117,13 +117,9 @@ class BaseApplication:
             if isinstance(result, tuple):
                 if len(result) == 3:
                     status, headers, body = result
-                elif len(result) == 2 and isinstance(result[0], (set, dict)):
-                    # Also go this path on set to get a better error below
+                elif len(result) == 2:
                     status = 200
                     headers, body = result
-                elif len(result) == 2:
-                    headers = {}
-                    status, body = result
                 elif len(result) == 1:
                     status, headers, body = 200, {}, result[0]
                 else:
