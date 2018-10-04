@@ -32,7 +32,7 @@ if __name__ == '__main__':
     asgish.run(main, 'uvicorn', 'localhost:8080')
 ```
 
-You can start the server by running this script, or start it the "ASGI way", e.g.
+You can start the server by running this script, or start it the *ASGI way*, e.g.
 with Uvicorn:
 ```
 $ uvicorn example:main --host=localhost --port=8080
@@ -46,7 +46,7 @@ $ pip install asgish --upgrade
 ```
 
 Asgish does not directly depend on any other libraries, but it
-does need an ASGI erver to run on, like
+does need an ASGI server to run on, like
 [Uvicorn](https://github.com/encode/uvicorn),
 [Hypercorn](https://gitlab.com/pgjones/hypercorn), or
 [Daphne](https://github.com/django/daphne).
