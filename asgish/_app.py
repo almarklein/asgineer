@@ -16,18 +16,16 @@ logger.propagate = False
 logger.setLevel(logging.INFO)  # we actually only emit error messages atm
 
 
-# todo: Connection: Close
-# https://www.uvicorn.org/server-behavior/
-
-
-def handler2asgi(handler):
+def to_asgi(handler):
     """ Convert a request handler (a coroutine function) to an ASGI
     application, which can be served with an ASGI server, such as
     Uvicorn, Hypercorn, Daphne, etc.
     """
 
     if not inspect.iscoroutinefunction(handler):
-        raise TypeError("Handler function must be a coroutine function.")
+        raise TypeError(
+            "asgish.to_asgi() handler function must be a coroutine function."
+        )
 
     class Application(BaseApplication):
         _handler = staticmethod(handler)

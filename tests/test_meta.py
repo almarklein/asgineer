@@ -11,7 +11,7 @@ def test_namespace():
         "BaseRequest",
         "HttpRequest",
         "WebsocketRequest",
-        "handler2asgi",
+        "to_asgi",
         "run",
     }
     assert ns == set(asgish.__all__)

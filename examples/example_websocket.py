@@ -2,7 +2,7 @@
 Demonstrate websocket usage.
 """
 
-from asgish import handler2asgi, run
+import asgish
 
 
 index = """
@@ -33,7 +33,7 @@ window.onload = function() {
 """.lstrip()
 
 
-@handler2asgi
+@asgish.to_asgi
 async def main(request):
 
     if not request.path.rstrip("/"):
@@ -61,4 +61,4 @@ async def websocket_handler(request):
 
 
 if __name__ == "__main__":
-    run(main, "uvicorn", "localhost:80", log_level="info")
+    asgish.run(main, "uvicorn", "localhost:80", log_level="info")

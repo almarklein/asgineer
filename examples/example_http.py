@@ -4,9 +4,7 @@ delegate the request to one of the other handlers, which demonstrate a
 few different ways to send an http response.
 """
 
-import sys
-
-from asgish import handler2asgi, run
+import asgish
 
 index = """
 <!DOCTYPE html>
@@ -24,7 +22,7 @@ index = """
 """.lstrip()
 
 
-@handler2asgi
+@asgish.to_asgi
 async def main(request):
 
     if not request.path.rstrip("/"):
@@ -96,6 +94,8 @@ async def chunks(request):
     files without using large amounts of memory.
     """
     # Little triage to support both Trio and asyncio based apps
+    import sys
+
     if "trio" in sys.modules:
         import trio as aio
     else:
@@ -113,4 +113,4 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-    run(main, "uvicorn", "localhost:8080", log_level="warning")
+    asgish.run(main, "uvicorn", "localhost:8080", log_level="warning")

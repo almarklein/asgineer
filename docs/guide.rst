@@ -11,9 +11,9 @@ Here's an example web application written with Asgish:
 .. code-block:: python
 
     # example.py
-    from asgish import handler2asgi
+    import asgish
     
-    @handler2asgi
+    @asgish.to_asgi
     async def main(request):
         return f"<html>You requested <b>{request.path}</b></html>"
 
@@ -28,8 +28,7 @@ running the file as a script:
 .. code-block:: python
     
     if __name__ == '__main__':  
-        from asgish import run
-        run('hypercorn', main, 'localhost:8080')
+        asgish.run('hypercorn', main, 'localhost:8080')
         # or use 'hypercorn', 'daphne', ...
 
 Alternatively, the above example can be run from the command line, using
@@ -37,11 +36,11 @@ any ASGI server:
 
 .. code-block:: shell
     
-    $ # Uvicorn:
+    # Uvicorn:
     $ uvicorn example.py:main --host=localhost --port=8080
-    $ # Hypercorn:
+    # Hypercorn:
     $ hypercorn example.py:main --bind=localhost:8080
-    $ # Daphne:
+    # Daphne:
     $ daphne example:main --bind=localhost --port=8080
 
 
@@ -53,9 +52,9 @@ other handlers:
 
 .. code-block:: python
 
-    from asgish import handler2asgi
+    import asgish
     
-    @handler2asgi
+    @asgish.to_asgi
     async def main(request):
         path = request.path
         if path == '/':
