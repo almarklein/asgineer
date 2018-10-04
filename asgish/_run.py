@@ -4,15 +4,16 @@ This module implements a ``run()`` function to start an ASGI server of choice.
 
 
 def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
-    """ Programatic API to run the given ASGI app with the given ASGI server.
-    (This works for any ASGI app, not just Asgish apps.)
+    """ Run the given ASGI app with the given ASGI server. (This works for
+    any ASGI app, not just Asgish apps.) This provides a generic programatic
+    API as an alternative to the standard ASGI-way to start a server.
     
     Arguments:
     
-    * app (required): The ASGI application object, or a string ``"module.path:appname"``.
-    * server (required): The name of the server library to use, e.g. uvicorn/hypercorn/etc.
-    * log_level: The logging level, e.g. warning/info/debug. Default 'info'.
-    * kwargs: additional arguments to pass to the underlying server library.
+    * ``app`` (required): The ASGI application object, or a string ``"module.path:appname"``.
+    * ``server`` (required): The name of the server to use, e.g. uvicorn/hypercorn/etc.
+    * ``log_level``: The logging level, e.g. warning/info/debug. Default 'info'.
+    * ``kwargs``: additional arguments to pass to the underlying server.
     """
 
     # Compose application name
