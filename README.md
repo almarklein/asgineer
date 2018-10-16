@@ -40,13 +40,13 @@ $ uvicorn example:main --host=localhost --port=8080
 
 ## Installation and dependencies
 
-Asgish need Python 3.6 or higher. To install or upgrade, run:
+Asgish needs Python 3.6 or higher. To install or upgrade, run:
 ```
 $ pip install asgish --upgrade
 ```
 
 Asgish does not directly depend on any other libraries, but it
-does need an ASGI server to run on, like
+needs an ASGI server to run on, like
 [Uvicorn](https://github.com/encode/uvicorn),
 [Hypercorn](https://gitlab.com/pgjones/hypercorn), or
 [Daphne](https://github.com/django/daphne).
