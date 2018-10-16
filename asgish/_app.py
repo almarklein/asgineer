@@ -4,16 +4,9 @@ between the user-defined handler function and the ASGI server.
 """
 
 import json
-import sys
-import logging
 import inspect
 from ._request import HttpRequest, WebsocketRequest
-
-# Initialize the logger to write errors to stderr (but can be overriden)
-logger = logging.getLogger("asgish")
-logger.addHandler(logging.StreamHandler(sys.stderr))
-logger.propagate = False
-logger.setLevel(logging.INFO)  # we actually only emit error messages atm
+from ._logging import logger, format_traceback
 
 
 def to_asgi(handler):
@@ -44,12 +37,6 @@ class BaseApplication:
     def __init__(self, scope):
         self._scope = scope
 
-    def _error(self, msg):
-        """ Log an error message. We don't rely on the server to print
-        exceptions, since e.g. Daphne swallows them.
-        """
-        logger.error(msg)
-
     async def __call__(self, receive, send):
 
         if self._scope["type"] == "http":
@@ -61,7 +48,7 @@ class BaseApplication:
         elif self._scope["type"] == "lifespan":
             await self._handle_lifespan(receive, send)
         else:
-            self._error(f"Dont know about ASGI type {self._scope['type']}")
+            logger.error(f"Dont know about ASGI type {self._scope['type']}")
 
     async def _handle_lifespan(self, receive, send):
         while True:
@@ -76,7 +63,7 @@ class BaseApplication:
                 await send({"type": "lifespan.cleanup.complete"})
                 return
             else:
-                self._error(f"Unexpected lifespan message {message['type']}")
+                logger.error(f"Unexpected lifespan message {message['type']}")
 
     async def _handle_websocket(self, request, receive, send):
 
@@ -87,8 +74,8 @@ class BaseApplication:
 
         except Exception as err:
             # Error in the handler
-            error_text = "Error in websocket handler: " + str(err)
-            self._error(error_text)
+            error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
+            logger.error(error_text + format_traceback(err))
             return
         finally:
             # The ASGI spec specifies that ASGI servers should close
@@ -108,7 +95,7 @@ class BaseApplication:
                 "A websocket handler should return None; "
                 + "use request.send() and request.receive() to communicate."
             )
-            self._error(error_text)
+            logger.error(error_text)
 
     async def _handle_http(self, request, receive, send):
 
@@ -119,8 +106,8 @@ class BaseApplication:
 
         except Exception as err:
             # Error in the handler
-            error_text = "Error in request handler: " + str(err)
-            self._error(error_text)
+            error_text = f"{type(err).__name__} in request handler: {str(err)}"
+            logger.error(error_text + format_traceback(err))
             await send({"type": "http.response.start", "status": 500, "headers": []})
             await send({"type": "http.response.body", "body": error_text.encode()})
             return
@@ -143,12 +130,10 @@ class BaseApplication:
                 status, headers, body = 200, {}, result
 
             # Validate status and headers
-            assert isinstance(
-                status, int
-            ), f"Status code must be an int, not {type(status)}"
-            assert isinstance(
-                headers, dict
-            ), f"Headers must be a dict, not {type(headers)}"
+            if not isinstance(status, int):
+                raise ValueError(f"Status code must be an int, not {type(status)}")
+            if not isinstance(headers, dict):
+                raise ValueError(f"Headers must be a dict, not {type(headers)}")
 
             # Convert the body
             if isinstance(body, bytes):
@@ -185,8 +170,8 @@ class BaseApplication:
 
         except Exception as err:
             # Error in hanlding handler output
-            error_text = "Error in processing handler output: " + str(err)
-            self._error(error_text)
+            error_text = f"Error in processing handler output: {str(err)}"
+            logger.error(error_text)
             await send({"type": "http.response.start", "status": 500, "headers": []})
             await send({"type": "http.response.body", "body": error_text.encode()})
             return
@@ -205,9 +190,10 @@ class BaseApplication:
                 async for chunk in body:
                     if isinstance(chunk, str):
                         chunk = chunk.encode()
-                    assert isinstance(
-                        chunk, bytes
-                    ), f"Body chunk must be str or bytes, not {type(chunk)}"
+                    if not isinstance(chunk, bytes):
+                        raise TypeError(
+                            f"Body chunk must be str or bytes, not {type(chunk)}"
+                        )
                     if not start_is_sent:
                         start_is_sent = True
                         await send(start)
@@ -219,8 +205,8 @@ class BaseApplication:
                 )
 
             except Exception as err:
-                error_text = "Error in chunked response: " + str(err)
-                self._error(error_text)
+                error_text = f"{type(err).__name__} in chunked response: {str(err)}"
+                logger.error(error_text + format_traceback(err))
                 if not start_is_sent:
                     await send(
                         {"type": "http.response.start", "status": 500, "headers": []}

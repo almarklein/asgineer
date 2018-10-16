@@ -15,7 +15,8 @@ index = """
     <a href='/foo.txt'>Text</a><br>
     <a href='/api/items'>JSON api</a><br>
     <a href='/redirect?url=http://python.org'>redirect</a><br>
-    <a href='/error'>error</a><br>
+    <a href='/error1'>error1</a><br>
+    <a href='/error2'>error2</a><br>
     <a href='/chunks'>chunks</a><br>
 </body>
 </html>
@@ -35,8 +36,10 @@ async def main(request):
         return await json_api(request)
     elif request.path == "/redirect":
         return await redirect(request)
-    elif request.path == "/error":
-        return await error(request)
+    elif request.path == "/error1":
+        return await error1(request)
+    elif request.path == "/error2":
+        return await error2(request)
     elif request.path == "/chunks":
         return await chunks(request)
     else:
@@ -81,10 +84,20 @@ async def redirect(request):
         return 500, {}, "specify the URL using a query param"
 
 
-async def error(request):
+async def error1(request):
     """ Handler with a deliberate error.
     """
-    1 / 0
+
+    def foo():
+        1 / 0
+
+    foo()
+
+
+async def error2(request):
+    """ Handler with a deliberate wrong result.
+    """
+    return 400, "ho"
 
 
 async def chunks(request):
