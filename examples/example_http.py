@@ -126,4 +126,4 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-    asgish.run(main, "uvicorn", "localhost:8080", log_level="warning")
+    asgish.run(main, "uvicorn", "localhost:8080")

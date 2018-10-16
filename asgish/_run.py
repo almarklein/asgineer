@@ -3,7 +3,7 @@ This module implements a ``run()`` function to start an ASGI server of choice.
 """
 
 
-def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
+def run(app, server, bind="localhost:8080", **kwargs):
     """ Run the given ASGI app with the given ASGI server. (This works for
     any ASGI app, not just Asgish apps.) This provides a generic programatic
     API as an alternative to the standard ASGI-way to start a server.
@@ -12,7 +12,6 @@ def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
     
     * ``app`` (required): The ASGI application object, or a string ``"module.path:appname"``.
     * ``server`` (required): The name of the server to use, e.g. uvicorn/hypercorn/etc.
-    * ``log_level``: The logging level, e.g. warning/info/debug. Default 'info'.
     * ``kwargs``: additional arguments to pass to the underlying server.
     """
 
@@ -37,20 +36,22 @@ def run(app, server, bind="localhost:8080", *, log_level="info", **kwargs):
         raise ValueError(f"Invalid server specified: {server!r}")
 
     # Delegate
-    return func(appname, bind, log_level, **kwargs)
+    return func(appname, bind, **kwargs)
 
 
-def _run_hypercorn(appname, bind, log_level, **kwargs):
+def _run_hypercorn(appname, bind, **kwargs):
     from hypercorn.__main__ import main
 
+    # Hypercorn docs say: "Hypercorn has two loggers, an access logger and an error logger.
+    # By default neither will actively log." So we dont need to do anything.
+
     kwargs["bind"] = bind
-    # kwargs['log_level'] = log_level
 
     args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
     return main(args + [appname])
 
 
-def _run_uvicorn(appname, bind, log_level, **kwargs):
+def _run_uvicorn(appname, bind, **kwargs):
     from uvicorn.main import main
 
     if ":" in bind:
@@ -60,13 +61,14 @@ def _run_uvicorn(appname, bind, log_level, **kwargs):
     else:
         kwargs["host"] = bind
 
-    kwargs["log_level"] = log_level
+    # Default to an error log_level, otherwise uvicorn is quite verbose
+    kwargs.setdefault("log_level", "warning")
 
     args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
     return main(args + [appname])
 
 
-def _run_daphne(appname, bind, log_level, **kwargs):
+def _run_daphne(appname, bind, **kwargs):
     from daphne.cli import CommandLineInterface
 
     if ":" in bind:
@@ -76,8 +78,9 @@ def _run_daphne(appname, bind, log_level, **kwargs):
     else:
         kwargs["bind"] = bind
 
-    levelmap = {"error": 0, "warn": 0, "warning": 0, "info": 1, "debug": 2}
-    kwargs["verbosity"] = levelmap[log_level.lower()]
+    # Default to warning level verbosity
+    # levelmap = {"error": 0, "warn": 0, "warning": 0, "info": 1, "debug": 2}
+    kwargs.setdefault("verbosity", 0)
 
     args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
     return CommandLineInterface().run(args + [appname])
