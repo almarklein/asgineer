@@ -17,8 +17,11 @@ START_CODE = f"""
 import os
 import sys
 import time
+import logging
 import threading
 import _thread
+
+logging.getLogger("asgish").setLevel(logging.WARNING)  # Prevent startup/shutdown messages
 
 def closer():
     while os.path.isfile(__file__):
