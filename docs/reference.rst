@@ -74,14 +74,14 @@ Details on Asgish' behavior
 
 Asgish will invoke your main handler for each incoming request. If an
 exception is raised inside the handler, this exception will be logged
-using the logger that can be obtained with
+(including ``exc_info``) using the logger that can be obtained with
 ``logging.getLogger("asgish")``, which by default writes to stderr. A
-status 500 (internal server error) response is send back, and the error
-message is included (if possible).
+status 500 (internal server error) response is sent back, and the error
+message (without traceback) is included (if the response has not yet been sent).
 
 Similarly, when the returned response is flawed, a (slightly different)
 error message is logged and included in the response.
 
 In fact, Asgish handles all exceptions, since the ASGI servers log
-errors in differt ways (some just ignore them). If an error does fall
+errors in different ways (some just ignore them). If an error does fall
 through, it can be considered a bug.

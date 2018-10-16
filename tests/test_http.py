@@ -251,13 +251,13 @@ async def handler_err1(request):
 
 
 async def handler_err2(request):
-    raise ValueError("woops")
+    raise ValueError("wo" + "ops")
     return 200, {"xx-custom": "xx"}, "oops"
 
 
 async def handler_err3(request):
     async def chunkiter():
-        raise ValueError("woops")
+        raise ValueError("wo" + "ops")
         yield "foo"
 
     return 200, {"xx-custom": "xx"}, chunkiter()
@@ -266,7 +266,7 @@ async def handler_err3(request):
 async def handler_err4(request):
     async def chunkiter():
         yield "foo"
-        raise ValueError("woops")  # too late to do a status 500
+        raise ValueError("wo" + "ops")  # too late to do a status 500
 
     return 200, {"xx-custom": "xx"}, chunkiter()
 
@@ -294,7 +294,8 @@ def test_errors():
     assert "error in request handler" in res.content.decode().lower()
     assert "woops" in res.content.decode()
     assert "woops" in p.out
-    assert p.out.count("woops") == 1
+    assert p.out.count("ERROR") == 1
+    assert p.out.count("woops") == 2
     assert "xx-custom" not in res.headers
 
     # Exception in handler with chunked body
