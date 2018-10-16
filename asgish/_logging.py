@@ -19,17 +19,6 @@ class Formatter(logging.Formatter):
             super().format(record),
         )
 
-
-def format_traceback(err):
-    """ Returns the string traceback for the given error object.
-    """
-    try:
-        out = "".join(traceback.format_list(traceback.extract_tb(err.__traceback__)))
-        return "\n" + out.rstrip()
-    except Exception as err:  # Failsafe
-        return "Woops, format_traceback fails: " + str(err)
-
-
 # Get our logger
 logger = logging.getLogger("asgish")
 logger.propagate = False

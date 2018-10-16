@@ -6,7 +6,7 @@ between the user-defined handler function and the ASGI server.
 import json
 import inspect
 from ._request import HttpRequest, WebsocketRequest
-from ._logging import logger, format_traceback
+from ._logging import logger
 
 
 def to_asgi(handler):
@@ -75,7 +75,7 @@ class BaseApplication:
         except Exception as err:
             # Error in the handler
             error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
-            logger.error(error_text + format_traceback(err))
+            logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
             return
         finally:
             # The ASGI spec specifies that ASGI servers should close
@@ -107,7 +107,7 @@ class BaseApplication:
         except Exception as err:
             # Error in the handler
             error_text = f"{type(err).__name__} in request handler: {str(err)}"
-            logger.error(error_text + format_traceback(err))
+            logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
             await send({"type": "http.response.start", "status": 500, "headers": []})
             await send({"type": "http.response.body", "body": error_text.encode()})
             return
@@ -206,7 +206,7 @@ class BaseApplication:
 
             except Exception as err:
                 error_text = f"{type(err).__name__} in chunked response: {str(err)}"
-                logger.error(error_text + format_traceback(err))
+                logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
                 if not start_is_sent:
                     await send(
                         {"type": "http.response.start", "status": 500, "headers": []}
