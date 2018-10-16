@@ -69,7 +69,7 @@ setup(
     # entry_points={'console_scripts': ['asgi = asgi:cli'], },
     zip_safe=True,
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Topic :: Internet :: WWW/HTTP",
         "License :: OSI Approved :: BSD License",

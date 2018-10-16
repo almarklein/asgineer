@@ -25,10 +25,3 @@ of these seperately:
 * `Daphne <https://github.com/django/daphne>`_ is part of the Django ecosystem (uses Twisted).
 * `Trio-web <https://github.com/sorcio/trio-asgi>`_ is based on Trio, pre-alpa and incomplete, you can help improve it!
 * Others will surely come, also watch `this list <https://asgi.readthedocs.io/en/latest/implementations.html#servers>`_ ...
-
-
-Status
-======
-
-Note that Asgish is in alpha status; we reserve the right to change the (tiny)
-API at any time ...
