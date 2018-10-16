@@ -33,7 +33,7 @@ if __name__ == "__main__":
     threading.Thread(target=closer).start()
     sys.stdout.write("START\\n")
     sys.stdout.flush()
-    asgish.run("__main__:app", "asgiservername", "localhost:{PORT}", log_level="warning")
+    asgish.run("__main__:app", "asgiservername", "localhost:{PORT}")
     sys.stdout.flush()
     sys.exit(0)
 """
