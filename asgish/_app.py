@@ -3,10 +3,24 @@ This module implements an ASGI application class that forms the adapter
 between the user-defined handler function and the ASGI server.
 """
 
+import sys
 import json
+import logging
 import inspect
 from ._request import HttpRequest, WebsocketRequest
-from ._logging import logger
+
+
+# Initialize the logger
+logger = logging.getLogger("asgish")
+logger.propagate = False
+logger.setLevel(logging.INFO)
+_handler = logging.StreamHandler(sys.stderr)
+_handler.setFormatter(
+    logging.Formatter(
+        fmt="[%(levelname)s %(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+)
+logger.addHandler(_handler)
 
 
 def to_asgi(handler):
