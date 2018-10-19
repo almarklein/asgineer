@@ -1,11 +1,11 @@
 import os
 import sys
 
-from asgish.testutils import ServerProcess
+from asgish.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():
-    return os.environ.get("ASGISH_SERVER", "uvicorn").lower()
+    return os.environ.get("ASGISH_SERVER", "mock").lower()
 
 
 def set_backend_from_argv():
@@ -22,16 +22,22 @@ def run_tests(scope):
     print("Done")
 
 
-class AsgishServerProcess(ServerProcess):
-    def __init__(self, handler):
-        super().__init__(get_backend(), handler)
+def filter_lines(lines):
+    # Overloadable line filter
+    skip = (
+        "Running on http",
+        "Task was destroyed but",
+        "task: <Task pending coro",
+        "[INFO ",
+    )
+    return [line for line in lines if not line.startswith(skip)]
 
-    def _filter_lines(self, lines):
-        # Overloadable line filter
-        skip = (
-            "Running on http",
-            "Task was destroyed but",
-            "task: <Task pending coro",
-            "[INFO ",
-        )
-        return [line for line in lines if not line.startswith(skip)]
+
+def make_server(app):
+    servername = get_backend()
+    if servername.lower() == "mock":
+        server = MockTestServer(app)
+    else:
+        server = ProcessTestServer(app, servername)
+    server.filter_lines = filter_lines
+    return server

@@ -1,8 +1,6 @@
 import json
 
-import requests
-
-from common import AsgishServerProcess
+from common import make_server
 
 
 async def handle_request_object1(request):
@@ -20,13 +18,13 @@ async def handle_request_object1(request):
 
 def test_request_object():
 
-    with AsgishServerProcess(handle_request_object1) as p:
-        res = requests.post(p.url + "/xx/yy?arg=3&arg=4", b'{"foo": 42}')
+    with make_server(handle_request_object1) as p:
+        res = p.post(p.url + "/xx/yy?arg=3&arg=4", b'{"foo": 42}')
 
-    assert res.status_code == 200
+    assert res.status == 200
     assert not p.out
 
-    d = res.json()
+    d = json.loads(res.body.decode())
     assert d["url"] == p.url + "/xx/yy?arg=3&arg=4"
     assert "user-agent" in d["headers"]
     assert d["querylist"] == [["arg", "3"], ["arg", "4"]]  # json makes tuples lists
