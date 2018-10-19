@@ -8,6 +8,7 @@ import time
 import inspect
 import tempfile
 import subprocess
+from urllib.request import urlopen
 
 
 testfilename = os.path.join(
@@ -22,8 +23,6 @@ START_CODE = f"""
 import os
 import sys
 import time
-import logging
-import importlib
 import threading
 import _thread
 
@@ -36,18 +35,22 @@ def closer():
 
 handler = X
 
-app = asgish.to_asgi(handler)
+async def proxy_handler(request):
+    if request.path.startswith("/specialtestpath/"):
+        return "OK"
+    return await handler(request)
+
+app = asgish.to_asgi(proxy_handler)
 
 if __name__ == "__main__":
     threading.Thread(target=closer).start()
-    sys.stdout.write("START\\n")
-    sys.stdout.flush()
     asgish.run("__main__:app", "asgiservername", "localhost:{PORT}")
     sys.stdout.flush()
     sys.exit(0)
 """
 
 LOAD_MODULE_CODE = """
+import importlib
 def load_module(name, filename):
     assert filename.endswith('.py')
     if name in sys.modules:
@@ -77,17 +80,15 @@ class ServerProcess:
     def _get_handler_code(self, handler):
         mod = inspect.getmodule(handler)
         modname = "_main_" if mod.__name__ == "__main__" else mod.__name__
-        handler_name = handler.__name__
+        hname = handler.__name__
 
-        if getattr(mod, handler_name, None) is handler:
+        if getattr(mod, hname, None) is handler:
             # We can import the handler - safest option since handler may have deps
             code = LOAD_MODULE_CODE
             code += f"sys.path.insert(0, '')\n" + code
             if "." not in mod.__name__:
                 code += f"sys.path.insert(0, {os.path.dirname(mod.__file__)!r})\n"
-            code += (
-                f"handler = load_module({modname!r}, {mod.__file__!r}).{handler_name}"
-            )
+            code += f"handler = load_module({modname!r}, {mod.__file__!r}).{hname}"
 
         else:
             # Likely a handler defined inside a function. Get handler from sourece code.
@@ -101,7 +102,7 @@ class ServerProcess:
 
     def __enter__(self):
         self.out = ""
-        self._print(".", end="")
+        self._print("Spawning server ... ", end="")
 
         # Prepare code
         start_code = START_CODE.replace("asgiservername", self._backend)
@@ -110,11 +111,13 @@ class ServerProcess:
             f.write((start_code).encode())
 
         # Start server, clean up the temp filename on failure since __exit__ wont be called.
+        t0 = time.time()
         try:
             self._start_server()
         except Exception as err:
             self._delfile()
             raise err
+        self._print(f"in {time.time()-t0:0.2f}s. ", end="")
 
         return self
 
@@ -126,20 +129,21 @@ class ServerProcess:
             stderr=subprocess.STDOUT,
         )
         # Wait for process to start, and make sure it is not dead
-        while (
-            self._p.poll() is None
-            and self._p.stdout.readline().decode().strip() != "START"
-        ):
-            time.sleep(0.01)
-        time.sleep(0.5)  # Wait a bit more, to be sure the server is up
+        while self._p.poll() is None:
+            time.sleep(0.02)
+            try:
+                urlopen(self.url + "/specialtestpath/init")
+                break
+            except Exception:
+                pass
         if self._p.poll() is not None:
             raise RuntimeError(
                 "Process failed to start!\n" + self._p.stdout.read().decode()
             )
-        self._print(".", end="")
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self._print("." if exc_value is None else "e", end="")
+        self._print("- Closing ... " if exc_value is None else "Error ... ", end="")
+        t0 = time.time()
         # Ask process to stop
         self._delfile()
 
@@ -159,9 +163,9 @@ class ServerProcess:
         self.out = "\n".join(self._filter_lines(lines))
 
         if exc_value is None:
-            self._print(".")
+            self._print(f"in {time.time()-t0:0.2f}s. ")
         else:
-            self._print("  Process output:")
+            self._print("Process output:")
             self._print(self.out)
 
     def _delfile(self):
