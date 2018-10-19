@@ -6,6 +6,8 @@ def test_namespace():
 
     ns = set(name for name in dir(asgish) if not name.startswith("_"))
 
+    ns.discard("testutils")  # may or may not be imported
+
     assert ns == {
         "BaseRequest",
         "BaseRequest",
