@@ -1,9 +1,9 @@
-import requests
-import pytest
+import json
 
+import pytest
 import asgish
 
-from common import get_backend, AsgishServerProcess
+from common import get_backend, make_server
 
 
 def test_backend_reporter(capsys=None):
@@ -73,43 +73,45 @@ def test_normal_usage():
 
     # Test normal usage
 
-    with AsgishServerProcess(handler1) as p:
-        res = requests.get(p.url)
+    with make_server(handler1) as p:
+        res = p.get(p.url)
 
-    # res.status_code, res.reason, res.headers, , res.content
-    print(res.content)
+    print(res.status)
     print(res.headers)
+    print(res.body)
     print(p.out)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "hi!"
+    assert res.status == 200
+    assert res.body.decode() == "hi!"
     assert not p.out
 
     # Daphne capitalizes the header keys, hypercorn aims at lowercase
+    headers = set(k.lower() for k in res.headers.keys())
     refheaders = {"content-type", "content-length", "xx-foo"}
+    ignoreheaders = {"connection"}
     if get_backend() not in "daphne":
         refheaders.update({"server", "date"})
-    assert set(k.lower() for k in res.headers.keys()) == refheaders
+    assert headers.difference(ignoreheaders) == refheaders
     assert res.headers["content-type"] == "text/plain"
     assert res.headers["content-length"] == "3"  # yes, a string
 
     # Test delegation to other handler
 
-    with AsgishServerProcess(handler2) as p:
-        res = requests.get(p.url)
+    with make_server(handler2) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "hi!"
+    assert res.status == 200
+    assert res.body.decode() == "hi!"
     assert not p.out
     assert "xx-foo" in res.headers
 
     # Test delegation to yet other handler
 
-    with AsgishServerProcess(handler3) as p:
-        res = requests.get(p.url)
+    with make_server(handler3) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "hi!"
+    assert res.status == 200
+    assert res.body.decode() == "hi!"
     assert not p.out
     assert "xx-foo" in res.headers
 
@@ -118,34 +120,34 @@ def test_output_shapes():
 
     # Singleton arg
 
-    with AsgishServerProcess(handler4) as p:
-        res = requests.get(p.url)
+    with make_server(handler4) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "ho!"
+    assert res.status == 200
+    assert res.body.decode() == "ho!"
     assert not p.out
 
-    with AsgishServerProcess(handler5) as p:
-        res = requests.get(p.url)
+    with make_server(handler5) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "ho!"
+    assert res.status == 200
+    assert res.body.decode() == "ho!"
     assert not p.out
 
     # Two element tuple (two forms, one is flawed)
 
-    with AsgishServerProcess(handler6) as p:
-        res = requests.get(p.url)
+    with make_server(handler6) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 500
-    assert "Headers must be a dict" in res.content.decode()
+    assert res.status == 500
+    assert "Headers must be a dict" in res.body.decode()
     assert "Headers must be a dict" in p.out
 
-    with AsgishServerProcess(handler7) as p:
-        res = requests.get(p.url)
+    with make_server(handler7) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "ho!"
+    assert res.status == 200
+    assert res.body.decode() == "ho!"
     assert not p.out
     assert "xx-foo" in res.headers
 
@@ -154,40 +156,40 @@ def test_body_types():
 
     # Plain text
 
-    with AsgishServerProcess(handler4) as p:
-        res = requests.get(p.url)
+    with make_server(handler4) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
+    assert res.status == 200
     assert res.headers["content-type"] == "text/plain"
-    assert res.content.decode()
+    assert res.body.decode()
     assert not p.out
 
     # Json
 
-    with AsgishServerProcess(handler_json1) as p:
-        res = requests.get(p.url)
+    with make_server(handler_json1) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
+    assert res.status == 200
     assert res.headers["content-type"] == "application/json"
-    assert res.json() == {"foo": 42, "bar": 7}
+    assert json.loads(res.body.decode()) == {"foo": 42, "bar": 7}
     assert not p.out
 
     # HTML
 
-    with AsgishServerProcess(handler_html1) as p:
-        res = requests.get(p.url)
+    with make_server(handler_html1) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
+    assert res.status == 200
     assert res.headers["content-type"] == "text/html"
-    assert "foo" in res.content.decode()
+    assert "foo" in res.body.decode()
     assert not p.out
 
-    with AsgishServerProcess(handler_html2) as p:
-        res = requests.get(p.url)
+    with make_server(handler_html2) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
+    assert res.status == 200
     assert res.headers["content-type"] == "text/html"
-    assert "foo" in res.content.decode()
+    assert "foo" in res.body.decode()
     assert not p.out
 
 
@@ -217,29 +219,29 @@ def test_chunking():
 
     # Write
 
-    with AsgishServerProcess(handler_chunkwrite1) as p:
-        res = requests.get(p.url)
+    with make_server(handler_chunkwrite1) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200
-    assert res.content.decode() == "foobar"
+    assert res.status == 200
+    assert res.body.decode() == "foobar"
     assert not p.out
 
     # Read
 
-    with AsgishServerProcess(handler_chunkread1) as p:
-        res = requests.post(p.url, b"foobar")
+    with make_server(handler_chunkread1) as p:
+        res = p.post(p.url, b"foobar")
 
-    assert res.status_code == 200
-    assert res.content.decode() == "foobar"
+    assert res.status == 200
+    assert res.body.decode() == "foobar"
     assert not p.out
 
     # Both
 
-    with AsgishServerProcess(handler_chunkread2) as p:
-        res = requests.post(p.url, b"foobar")
+    with make_server(handler_chunkread2) as p:
+        res = p.post(p.url, b"foobar")
 
-    assert res.status_code == 200
-    assert res.content.decode() == "foobar"
+    assert res.status == 200
+    assert res.body.decode() == "foobar"
     assert not p.out
 
 
@@ -275,24 +277,22 @@ def test_errors():
 
     # Explicit error
 
-    with AsgishServerProcess(handler_err1) as p:
-        res = requests.get(p.url)
+    with make_server(handler_err1) as p:
+        res = p.get(p.url)
 
-    assert not res.ok
-    assert res.status_code == 501
-    assert res.content.decode() == "oops"
+    assert res.status == 501
+    assert res.body.decode() == "oops"
     assert not p.out
     assert "xx-custom" in res.headers
 
     # Exception in handler
 
-    with AsgishServerProcess(handler_err2) as p:
-        res = requests.get(p.url)
+    with make_server(handler_err2) as p:
+        res = p.get(p.url)
 
-    assert not res.ok
-    assert res.status_code == 500
-    assert "error in request handler" in res.content.decode().lower()
-    assert "woops" in res.content.decode()
+    assert res.status == 500
+    assert "error in request handler" in res.body.decode().lower()
+    assert "woops" in res.body.decode()
     assert "woops" in p.out
     assert p.out.count("ERROR") == 1
     assert p.out.count("woops") == 2
@@ -300,24 +300,22 @@ def test_errors():
 
     # Exception in handler with chunked body
 
-    with AsgishServerProcess(handler_err3) as p:
-        res = requests.get(p.url)
+    with make_server(handler_err3) as p:
+        res = p.get(p.url)
 
-    assert not res.ok
-    assert res.status_code == 500
-    assert "error in chunked response" in res.content.decode().lower()
-    assert "woops" in res.content.decode()
+    assert res.status == 500
+    assert "error in chunked response" in res.body.decode().lower()
+    assert "woops" in res.body.decode()
     assert "woops" in p.out and "foo" not in p.out
     assert "xx-custom" not in res.headers
 
     # Exception in handler with chunked body, too late
 
-    with AsgishServerProcess(handler_err4) as p:
-        res = requests.get(p.url)
+    with make_server(handler_err4) as p:
+        res = p.get(p.url)
 
-    assert res.ok  # no fail, just got half the page ...
-    assert res.status_code == 200
-    assert res.content.decode() == "foo"
+    assert res.status == 200
+    assert res.body.decode() == "foo"
     assert "woops" in p.out
     assert "xx-custom" in res.headers
 
@@ -367,50 +365,50 @@ async def handler_output12(request):
 
 def test_wrong_output():
 
-    with AsgishServerProcess(handler_output1) as p:
-        res = requests.get(p.url)
+    with make_server(handler_output1) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 500
-    assert "handler returned 4-tuple" in res.content.decode().lower()
+    assert res.status == 500
+    assert "handler returned 4-tuple" in res.body.decode().lower()
     assert "handler returned 4-tuple" in p.out.lower()
 
     for handler in (handler_output2, handler_output3, handler_output6):
-        with AsgishServerProcess(handler_output2) as p:
-            res = requests.get(p.url)
+        with make_server(handler_output2) as p:
+            res = p.get(p.url)
 
-        assert res.status_code == 500
-        assert "body cannot be" in res.content.decode().lower()
+        assert res.status == 500
+        assert "body cannot be" in res.body.decode().lower()
         assert "body cannot be" in p.out.lower()
 
-    with AsgishServerProcess(handler_output4) as p:
-        res = requests.get(p.url)
+    with make_server(handler_output4) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 500
-    assert "status code must be an int" in res.content.decode().lower()
+    assert res.status == 500
+    assert "status code must be an int" in res.body.decode().lower()
     assert "status code must be an int" in p.out.lower()
 
-    with AsgishServerProcess(handler_output5) as p:
-        res = requests.get(p.url)
+    with make_server(handler_output5) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 500
-    assert "headers must be a dict" in res.content.decode().lower()
+    assert res.status == 500
+    assert "headers must be a dict" in res.body.decode().lower()
     assert "headers must be a dict" in p.out.lower()
 
     # Chunked
 
-    with AsgishServerProcess(handler_output11) as p:
-        res = requests.get(p.url)
+    with make_server(handler_output11) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 500
-    assert "error in chunked response" in res.content.decode().lower()
-    assert "body chunk must be" in res.content.decode().lower()
+    assert res.status == 500
+    assert "error in chunked response" in res.body.decode().lower()
+    assert "body chunk must be" in res.body.decode().lower()
     assert "body chunk must be" in p.out.lower()
 
-    with AsgishServerProcess(handler_output12) as p:
-        res = requests.get(p.url)
+    with make_server(handler_output12) as p:
+        res = p.get(p.url)
 
-    assert res.status_code == 200  # too late to set status!
-    assert res.content.decode() == "foo"
+    assert res.status == 200  # too late to set status!
+    assert res.body.decode() == "foo"
     assert "body chunk must be" in p.out.lower()
 
 
@@ -443,5 +441,5 @@ if __name__ == "__main__":
 
     run_tests(globals())
 
-    # with AsgishServerProcess(handler_err2) as p:
+    # with make_server(handler_err2) as p:
     #     time.sleep(10)
