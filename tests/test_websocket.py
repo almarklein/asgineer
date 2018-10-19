@@ -3,7 +3,7 @@ import asyncio
 
 from autobahn.asyncio.websocket import WebSocketClientProtocol, WebSocketClientFactory
 
-from testutils import URL, ServerProcess
+from common import AsgishServerProcess
 
 
 def make_ws_request(url, messages_to_send=None):
@@ -68,8 +68,8 @@ def test_websocket1():
         await request.send(b"some bytes")
         await request.send({"some": "json"})
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")))
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")))
 
     assert messages == ["some text", b"some bytes", b'{"some": "json"}']
     assert not errors
@@ -85,8 +85,8 @@ def test_websocket1():
         async for m in request.receive_iter():
             print(m)
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")))
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")))
 
     assert messages == ["hi", "CLIENT_CLOSE"]
     assert not errors
@@ -105,8 +105,8 @@ def test_websocket2():
 
     send = "hi", "there", None  # None means client closes
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")), send)
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
 
     assert messages == []
     assert not errors
@@ -124,8 +124,8 @@ def test_websocket2():
 
     send = "hi", "there", "SERVER_STOP"
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")), send)
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
 
     assert messages == []
     assert not errors
@@ -144,8 +144,8 @@ def test_websocket_echo():
 
     send = "hi", "there", "SERVER_STOP"
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")), send)
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
 
     assert messages == ["hi", "there"]
     assert not errors
@@ -158,8 +158,8 @@ def test_websocket_no_accept():
         await request.send(b"some bytes")
         await request.send({"some": "json"})
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")))
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")))
 
     assert messages == []
     assert errors
@@ -176,8 +176,8 @@ def test_websocket_should_return_none():
         await request.send("some text")
         return 7
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")))
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")))
 
     assert messages == ["some text"]  # the request went fine
     assert not errors  # no errors as ws is concerned
@@ -189,8 +189,8 @@ def test_websocket_should_return_none():
     async def handle_ws(request):
         return "<html>hi</html>"
 
-    with ServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((URL.replace("http", "ws")))
+    with AsgishServerProcess(handle_ws) as p:
+        messages, errors = make_ws_request((p.url.replace("http", "ws")))
 
     assert messages == []
     assert errors  # ws errors
@@ -198,7 +198,7 @@ def test_websocket_should_return_none():
 
 
 if __name__ == "__main__":
-    from testutils import run_tests, set_backend_from_argv
+    from common import run_tests, set_backend_from_argv
 
     set_backend_from_argv()
     run_tests(globals())

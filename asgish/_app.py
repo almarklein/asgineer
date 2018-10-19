@@ -79,21 +79,6 @@ class BaseApplication:
             else:
                 logger.error(f"Unexpected lifespan message {message['type']}")
 
-    async def _handle_lifespan(self, receive, send):
-        while True:
-            message = await receive()
-            if message["type"] == "lifespan.startup":
-                # Could do startup stuff here
-                logger.info(f"Server is running")
-                await send({"type": "lifespan.startup.complete"})
-            elif message["type"] == "lifespan.cleanup":
-                # Could do cleanup stuff here
-                logger.info(f"Server is shutting down")
-                await send({"type": "lifespan.cleanup.complete"})
-                return
-            else:
-                self._error(f"Unexpected lifespan message {message['type']}")
-
     async def _handle_websocket(self, request, receive, send):
 
         # === Call websocket handler

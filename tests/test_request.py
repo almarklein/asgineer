@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from testutils import URL, ServerProcess
+from common import AsgishServerProcess
 
 
 async def handle_request_object1(request):
@@ -20,14 +20,14 @@ async def handle_request_object1(request):
 
 def test_request_object():
 
-    with ServerProcess(handle_request_object1) as p:
-        res = requests.post(URL + "/xx/yy?arg=3&arg=4", b'{"foo": 42}')
+    with AsgishServerProcess(handle_request_object1) as p:
+        res = requests.post(p.url + "/xx/yy?arg=3&arg=4", b'{"foo": 42}')
 
     assert res.status_code == 200
     assert not p.out
 
     d = res.json()
-    assert d["url"] == "http://127.0.0.1:8888/xx/yy?arg=3&arg=4"
+    assert d["url"] == p.url + "/xx/yy?arg=3&arg=4"
     assert "user-agent" in d["headers"]
     assert d["querylist"] == [["arg", "3"], ["arg", "4"]]  # json makes tuples lists
     assert d["querydict"] == {"arg": "4"}
@@ -36,7 +36,7 @@ def test_request_object():
 
 
 if __name__ == "__main__":
-    from testutils import run_tests, set_backend_from_argv
+    from common import run_tests, set_backend_from_argv
 
     set_backend_from_argv()
     run_tests(globals())
