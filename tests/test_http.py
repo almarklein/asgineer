@@ -3,7 +3,7 @@ import pytest
 
 import asgish
 
-from testutils import URL, ServerProcess, get_backend
+from common import get_backend, AsgishServerProcess
 
 
 def test_backend_reporter(capsys=None):
@@ -73,8 +73,8 @@ def test_normal_usage():
 
     # Test normal usage
 
-    with ServerProcess(handler1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler1) as p:
+        res = requests.get(p.url)
 
     # res.status_code, res.reason, res.headers, , res.content
     print(res.content)
@@ -95,8 +95,8 @@ def test_normal_usage():
 
     # Test delegation to other handler
 
-    with ServerProcess(handler2) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler2) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "hi!"
@@ -105,8 +105,8 @@ def test_normal_usage():
 
     # Test delegation to yet other handler
 
-    with ServerProcess(handler3) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler3) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "hi!"
@@ -118,15 +118,15 @@ def test_output_shapes():
 
     # Singleton arg
 
-    with ServerProcess(handler4) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler4) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "ho!"
     assert not p.out
 
-    with ServerProcess(handler5) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler5) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "ho!"
@@ -134,15 +134,15 @@ def test_output_shapes():
 
     # Two element tuple (two forms, one is flawed)
 
-    with ServerProcess(handler6) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler6) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 500
     assert "Headers must be a dict" in res.content.decode()
     assert "Headers must be a dict" in p.out
 
-    with ServerProcess(handler7) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler7) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "ho!"
@@ -154,8 +154,8 @@ def test_body_types():
 
     # Plain text
 
-    with ServerProcess(handler4) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler4) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.headers["content-type"] == "text/plain"
@@ -164,8 +164,8 @@ def test_body_types():
 
     # Json
 
-    with ServerProcess(handler_json1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_json1) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.headers["content-type"] == "application/json"
@@ -174,16 +174,16 @@ def test_body_types():
 
     # HTML
 
-    with ServerProcess(handler_html1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_html1) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.headers["content-type"] == "text/html"
     assert "foo" in res.content.decode()
     assert not p.out
 
-    with ServerProcess(handler_html2) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_html2) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.headers["content-type"] == "text/html"
@@ -217,8 +217,8 @@ def test_chunking():
 
     # Write
 
-    with ServerProcess(handler_chunkwrite1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_chunkwrite1) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200
     assert res.content.decode() == "foobar"
@@ -226,8 +226,8 @@ def test_chunking():
 
     # Read
 
-    with ServerProcess(handler_chunkread1) as p:
-        res = requests.post(URL, b"foobar")
+    with AsgishServerProcess(handler_chunkread1) as p:
+        res = requests.post(p.url, b"foobar")
 
     assert res.status_code == 200
     assert res.content.decode() == "foobar"
@@ -235,8 +235,8 @@ def test_chunking():
 
     # Both
 
-    with ServerProcess(handler_chunkread2) as p:
-        res = requests.post(URL, b"foobar")
+    with AsgishServerProcess(handler_chunkread2) as p:
+        res = requests.post(p.url, b"foobar")
 
     assert res.status_code == 200
     assert res.content.decode() == "foobar"
@@ -275,8 +275,8 @@ def test_errors():
 
     # Explicit error
 
-    with ServerProcess(handler_err1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_err1) as p:
+        res = requests.get(p.url)
 
     assert not res.ok
     assert res.status_code == 501
@@ -286,8 +286,8 @@ def test_errors():
 
     # Exception in handler
 
-    with ServerProcess(handler_err2) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_err2) as p:
+        res = requests.get(p.url)
 
     assert not res.ok
     assert res.status_code == 500
@@ -300,8 +300,8 @@ def test_errors():
 
     # Exception in handler with chunked body
 
-    with ServerProcess(handler_err3) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_err3) as p:
+        res = requests.get(p.url)
 
     assert not res.ok
     assert res.status_code == 500
@@ -312,8 +312,8 @@ def test_errors():
 
     # Exception in handler with chunked body, too late
 
-    with ServerProcess(handler_err4) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_err4) as p:
+        res = requests.get(p.url)
 
     assert res.ok  # no fail, just got half the page ...
     assert res.status_code == 200
@@ -367,30 +367,30 @@ async def handler_output12(request):
 
 def test_wrong_output():
 
-    with ServerProcess(handler_output1) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_output1) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 500
     assert "handler returned 4-tuple" in res.content.decode().lower()
     assert "handler returned 4-tuple" in p.out.lower()
 
     for handler in (handler_output2, handler_output3, handler_output6):
-        with ServerProcess(handler_output2) as p:
-            res = requests.get(URL)
+        with AsgishServerProcess(handler_output2) as p:
+            res = requests.get(p.url)
 
         assert res.status_code == 500
         assert "body cannot be" in res.content.decode().lower()
         assert "body cannot be" in p.out.lower()
 
-    with ServerProcess(handler_output4) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_output4) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 500
     assert "status code must be an int" in res.content.decode().lower()
     assert "status code must be an int" in p.out.lower()
 
-    with ServerProcess(handler_output5) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_output5) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 500
     assert "headers must be a dict" in res.content.decode().lower()
@@ -398,16 +398,16 @@ def test_wrong_output():
 
     # Chunked
 
-    with ServerProcess(handler_output11) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_output11) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 500
     assert "error in chunked response" in res.content.decode().lower()
     assert "body chunk must be" in res.content.decode().lower()
     assert "body chunk must be" in p.out.lower()
 
-    with ServerProcess(handler_output12) as p:
-        res = requests.get(URL)
+    with AsgishServerProcess(handler_output12) as p:
+        res = requests.get(p.url)
 
     assert res.status_code == 200  # too late to set status!
     assert res.content.decode() == "foo"
@@ -437,10 +437,11 @@ def test_wrong_use():
 ##
 
 if __name__ == "__main__":
-    from testutils import run_tests, set_backend_from_argv
+    from common import run_tests, set_backend_from_argv
 
     set_backend_from_argv()
+
     run_tests(globals())
 
-    # with ServerProcess(handler_err2) as p:
+    # with AsgishServerProcess(handler_err2) as p:
     #     time.sleep(10)
