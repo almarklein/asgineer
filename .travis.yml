@@ -56,7 +56,7 @@ script:
         black --check .;
         pyflakes .;
       else
-        pytest -v .;
+        pytest -v --cov=asgish tests;
       fi;
 
 after_success:
