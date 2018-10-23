@@ -5,7 +5,7 @@ from asgish.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():
-    return os.environ.get("ASGISH_SERVER", "mock").lower()
+    return os.environ.get("ASGISH_SERVER", "uvicorn").lower()
 
 
 def set_backend_from_argv():

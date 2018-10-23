@@ -1,5 +1,4 @@
 import sys
-import asyncio
 
 from common import make_server
 
