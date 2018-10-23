@@ -1,3 +1,7 @@
+"""
+Common utilities used in our test scripts.
+"""
+
 import os
 import sys
 

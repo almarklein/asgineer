@@ -1,3 +1,7 @@
+"""
+Test testutils code. Note that most other tests implicitly test it.
+"""
+
 from common import make_server
 
 

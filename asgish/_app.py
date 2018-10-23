@@ -62,26 +62,28 @@ class BaseApplication:
         elif self._scope["type"] == "lifespan":
             await self._handle_lifespan(receive, send)
         else:
-            logger.error(f"Dont know about ASGI type {self._scope['type']}")
+            logger.warn(f"Unknown ASGI type {self._scope['type']}")
 
     async def _handle_lifespan(self, receive, send):
         while True:
             message = await receive()
             if message["type"] == "lifespan.startup":
                 # Could do startup stuff here
-                logger.info("Server is running")
+                try:
+                    logger.info("Server is starting up")
+                except Exception:  # pragma: no cover
+                    pass
                 await send({"type": "lifespan.startup.complete"})
             elif message["type"] == "lifespan.cleanup":
                 # Could do cleanup stuff here
-                logger.info("Server is shutting down")
+                try:
+                    logger.info("Server is cleaning up")
+                except Exception:  # pragma: no cover
+                    pass
                 await send({"type": "lifespan.cleanup.complete"})
                 return
             else:
-                try:
-                    rpr = message["type"]
-                except Exception:
-                    rpr = repr(message)
-                logger.error(f"Unexpected lifespan message {rpr}")
+                logger.warn(f"Unknown lifespan message {message['type']}")
 
     async def _handle_websocket(self, request, receive, send):
 
@@ -93,7 +95,7 @@ class BaseApplication:
         except Exception as err:
             # Error in the handler
             error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
-            logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
+            logger.error(error_text, exc_info=err)
             return
         finally:
             # The ASGI spec specifies that ASGI servers should close
@@ -125,7 +127,7 @@ class BaseApplication:
         except Exception as err:
             # Error in the handler
             error_text = f"{type(err).__name__} in request handler: {str(err)}"
-            logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
+            logger.error(error_text, exc_info=err)
             await send({"type": "http.response.start", "status": 500, "headers": []})
             await send({"type": "http.response.body", "body": error_text.encode()})
             return
@@ -224,7 +226,7 @@ class BaseApplication:
 
             except Exception as err:
                 error_text = f"{type(err).__name__} in chunked response: {str(err)}"
-                logger.error(error_text, exc_info=(type(err), err, err.__traceback__))
+                logger.error(error_text, exc_info=err)
                 if not start_is_sent:
                     await send(
                         {"type": "http.response.start", "status": 500, "headers": []}

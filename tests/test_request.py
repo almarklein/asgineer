@@ -1,3 +1,7 @@
+"""
+Test some specifics of the Request classes.
+"""
+
 import json
 
 from common import make_server
