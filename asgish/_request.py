@@ -190,8 +190,8 @@ class WebsocketRequest(BaseRequest):
                 self._client_state = DISCONNECTED
             return message
         else:  # pragma: no cover
-            raise RuntimeError(
-                'Cannot call "receive" after the client disconnect message has been received.'
+            raise IOError(
+                'Cannot call "receive" once a client disconnect message has been received.'
             )
 
     async def raw_send(self, message):
@@ -215,7 +215,7 @@ class WebsocketRequest(BaseRequest):
                 self._application_state = DISCONNECTED
             await self._send(message)
         else:
-            raise RuntimeError('Cannot call "send" once a close message has been sent.')
+            raise IOError('Cannot call "send" once a close message has been sent.')
 
     async def accept(self, subprotocol=None):
         """ Async function to accept the websocket connection.
@@ -240,12 +240,12 @@ class WebsocketRequest(BaseRequest):
 
     async def receive(self):
         """ Async function to receive one websocket message. The result can be
-        ``bytes`` or ``str``. Raises ``IOError`` when a disconnect-message is received.
+        ``bytes`` or ``str``. Raises ``EOFError`` when a disconnect-message is received.
         """
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
         if message["type"] == "websocket.disconnect":
-            raise IOError("Websocket disconnect", message.get("code", 1000))
+            raise EOFError("Websocket disconnect", message.get("code", 1000))
         return message.get("bytes", None) or message.get("text", None) or b""
 
     # todo: maybe receive_bytes and/or receive_text?
