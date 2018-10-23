@@ -3,7 +3,8 @@ Test testutils code. Note that most other tests implicitly test it.
 """
 
 from common import make_server
-from asgish.testutils import MockTestServer, ProcessTestServer
+from asgish.testutils import MockTestServer
+import asgish
 
 
 async def handler1(request):
@@ -14,12 +15,18 @@ async def handler2(request):
     return await handler1(request)
 
 
+app1 = asgish.to_asgi(handler1)
+
+
 def test_http():
     async def handler3(request):
         return "hellow3"
 
     async def handler4(request):
         return await handler1(request)
+
+    app3 = asgish.to_asgi(handler3)
+    app3
 
     with make_server(handler1) as p:
         assert p.get("").body == b"hellow1"
@@ -33,6 +40,46 @@ def test_http():
     # This would work with the Mock server, but not with uvicorn
     # with make_server(handler4) as p:
     #     assert p.get("").body == b"hellow1"
+
+    with make_server(app1) as p:
+        assert p.get("").body == b"hellow1"
+
+    # This would work with the Mock server, but not with uvicorn
+    # with make_server(app3) as p:
+    #     assert p.get("").body == b"hellow3"
+
+
+def test_http_mock():
+    # We repeat the test, so that on non-mock server runs we can see
+    # a better coverage of the testutils module
+
+    async def handler3(request):
+        return "hellow3"
+
+    async def handler4(request):
+        return await handler1(request)
+
+    app3 = asgish.to_asgi(handler3)
+
+    with MockTestServer(handler1) as p:
+        assert p.get("").body == b"hellow1"
+
+    with MockTestServer(handler2) as p:
+        assert p.get("").body == b"hellow1"
+
+    with MockTestServer(handler3) as p:
+        assert p.get("").body == b"hellow3"
+
+    # Only with mock server!
+    with MockTestServer(handler4) as p:
+        assert p.get("").body == b"hellow1"
+
+    with MockTestServer(app1) as p:
+        assert p.get("").body == b"hellow1"
+
+    # Only with mock server!
+    with MockTestServer(app3) as p:
+        assert p.get("").body == b"hellow3"
 
 
 def test_lifetime_messages():
@@ -48,15 +95,10 @@ def test_lifetime_messages():
     assert "xxx" in p.out
     assert "Server is cleaning up" in p.out
 
-    try:
-        import uvicorn as server
-    except ImportError:
-        return  # skip ...
+    with make_server(handler) as p:
+        assert p.get("").body.decode() == "hellow"
 
-    with ProcessTestServer(handler, server.__name__) as p:
-        assert p.get("").body.decode()  # == 'hellow'
-
-    # todo: somehow the lifetime messages dont show up and I dont know why.
+    # todo: somehow the lifetime messages dont show up (on uvicorn) and I dont know why.
 
     # assert len(p.out.strip().splitlines()) == 3
     # assert "Server is starting up" in p.out
