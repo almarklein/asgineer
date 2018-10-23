@@ -58,7 +58,7 @@ Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests a
 
 * Use `black .` to apply Black code formatting.
 * Run `pyflakes .` to test for unused imports and more.
-* Run `pytest tests` to run the tests, optionally set the `ASGISH_SERVER` environment variable.
+* Run `pytest tests` to run the tests, optionally set the `ASGI_SERVER` environment variable.
 
 
 ## License
