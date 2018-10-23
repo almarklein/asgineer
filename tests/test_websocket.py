@@ -1,61 +1,7 @@
 import sys
 import asyncio
 
-from autobahn.asyncio.websocket import WebSocketClientProtocol, WebSocketClientFactory
-
-from common import AsgishServerProcess
-
-
-def make_ws_request(url, messages_to_send=None):
-
-    host, port = url.split("//")[-1].split(":")
-    port = int(port)
-
-    messages = []
-    errors = []
-
-    class MyClientProtocol(WebSocketClientProtocol):
-        def sendCloseLater(self):
-            loop = asyncio.get_event_loop()
-            loop.call_later(1.0, self.sendClose)
-
-        def onOpen(self):
-            for m in messages_to_send or []:
-                if m is None:
-                    self.sendCloseLater()
-                elif isinstance(m, str):
-                    self.sendMessage(m.encode(), False)
-                else:
-                    self.sendMessage(m, True)
-
-        def onMessage(self, message, isBinary):
-            if not isBinary:
-                message = message.decode()
-            messages.append(message)
-            if message == "CLIENT_CLOSE":
-                self.sendCloseLater()
-
-        def onClose(self, wasClean, code, reason):
-            loop = asyncio.get_event_loop()
-            loop.stop()
-
-        def dropConnection(self, abort=False):
-            if abort and not self.wasClean:
-                errors.append(self.wasNotCleanReason)
-            super().dropConnection(abort)
-
-    factory = WebSocketClientFactory(url)
-    factory.protocol = MyClientProtocol
-
-    loop = asyncio.get_event_loop()
-    coro = loop.create_connection(factory, host, port)
-    loop.run_until_complete(coro)
-    loop.run_forever()
-
-    return messages, errors
-
-
-##
+from common import make_server
 
 
 def test_websocket1():
@@ -67,12 +13,18 @@ def test_websocket1():
         await request.send("some text")
         await request.send(b"some bytes")
         await request.send({"some": "json"})
+        await request.close()
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")))
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == ["some text", b"some bytes", b'{"some": "json"}']
-    assert not errors
     assert not p.out
 
     # Send messages from server to client, let the client stop
@@ -85,11 +37,18 @@ def test_websocket1():
         async for m in request.receive_iter():
             print(m)
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")))
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == ["hi", "CLIENT_CLOSE"]
-    assert not errors
     assert not p.out
 
 
@@ -103,13 +62,21 @@ def test_websocket2():
             print(m)
         sys.stdout.flush()
 
-    send = "hi", "there", None  # None means client closes
+    async def client(ws):
+        messages = []
+        await ws.send("hi")
+        await ws.send("there")
+        await ws.close()
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == []
-    assert not errors
     assert p.out == "hi\nthere"
 
     # Send messages from server to client, let the server stop
@@ -122,13 +89,21 @@ def test_websocket2():
                 break
         sys.stdout.flush()
 
-    send = "hi", "there", "SERVER_STOP"
+    async def client(ws):
+        messages = []
+        await ws.send("hi")
+        await ws.send("there")
+        await ws.send("SERVER_STOP")
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == []
-    assert not errors
     assert p.out == "hi\nthere\nSERVER_STOP"
 
 
@@ -142,13 +117,21 @@ def test_websocket_echo():
                 await request.send(m)
         sys.stdout.flush()
 
-    send = "hi", "there", "SERVER_STOP"
+    async def client(ws):
+        messages = []
+        await ws.send("hi")
+        await ws.send("there")
+        await ws.send("SERVER_STOP")
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")), send)
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == ["hi", "there"]
-    assert not errors
     assert not p.out
 
 
@@ -158,11 +141,18 @@ def test_websocket_no_accept():
         await request.send(b"some bytes")
         await request.send({"some": "json"})
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")))
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
 
-    assert messages == []
-    assert errors
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == [] or messages is None  # handshake fails
     assert "Error in websocket handler" in p.out
 
 
@@ -176,11 +166,18 @@ def test_websocket_should_return_none():
         await request.send("some text")
         return 7
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")))
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
 
     assert messages == ["some text"]  # the request went fine
-    assert not errors  # no errors as ws is concerned
     assert "should return None" in p.out
 
     # This is a classic case where a user is doing it wrong, and the error
@@ -189,11 +186,18 @@ def test_websocket_should_return_none():
     async def handle_ws(request):
         return "<html>hi</html>"
 
-    with AsgishServerProcess(handle_ws) as p:
-        messages, errors = make_ws_request((p.url.replace("http", "ws")))
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
 
-    assert messages == []
-    assert errors  # ws errors
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == [] or messages is None  # handshake fails
     assert "should return None" in p.out
 
 

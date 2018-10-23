@@ -162,7 +162,7 @@ class WebsocketRequest(BaseRequest):
     __slots__ = ("_receive", "_send", "_client_state", "_application_state")
 
     def __init__(self, scope, receive, send):
-        assert scope["type"] == "websocket"
+        assert scope["type"] == "websocket", f"Unexpected ws scope type {scope['type']}"
         super().__init__(scope)
         self._receive = receive
         self._send = send
@@ -175,15 +175,16 @@ class WebsocketRequest(BaseRequest):
         """
         if self._client_state == CONNECTING:
             message = await self._receive()
-            message_type = message["type"]
-            assert message_type == "websocket.connect"
+            mt = message["type"]
+            assert mt == "websocket.connect", f"Unexpected ws message type {mt}"
             self._client_state = CONNECTED
             return message
         elif self._client_state == CONNECTED:
             message = await self._receive()
-            message_type = message["type"]
-            assert message_type in {"websocket.receive", "websocket.disconnect"}
-            if message_type == "websocket.disconnect":
+            mt = message["type"]
+            ok_types = {"websocket.receive", "websocket.disconnect"}
+            assert mt in ok_types, f"Unexpected ws message type {mt}"
+            if mt == "websocket.disconnect":
                 self._client_state = DISCONNECTED
             return message
         else:
@@ -196,17 +197,19 @@ class WebsocketRequest(BaseRequest):
         ensuring valid state transitions.
         """
         if self._application_state == CONNECTING:
-            message_type = message["type"]
-            assert message_type in {"websocket.accept", "websocket.close"}
-            if message_type == "websocket.close":
+            mt = message["type"]
+            ok_types = {"websocket.accept", "websocket.close"}
+            assert mt in ok_types, f"Unexpected ws message type {mt}"
+            if mt == "websocket.close":
                 self._application_state = DISCONNECTED
             else:
                 self._application_state = CONNECTED
             await self._send(message)
         elif self._application_state == CONNECTED:
-            message_type = message["type"]
-            assert message_type in {"websocket.send", "websocket.close"}
-            if message_type == "websocket.close":
+            mt = message["type"]
+            ok_types = {"websocket.send", "websocket.close"}
+            assert mt in ok_types, f"Unexpected ws message type {mt}"
+            if mt == "websocket.close":
                 self._application_state = DISCONNECTED
             await self._send(message)
         else:
