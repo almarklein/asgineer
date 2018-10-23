@@ -110,6 +110,8 @@ class HttpRequest(BaseRequest):
 
     async def iter_body(self):
         """ Async generator that iterates over the chunks in the body.
+        During iteration you should probably take measures to avoid excessive
+        memory usage to prevent server vulnerabilities.
         """
         if self._iter_done:
             raise IOError("Request body was already consumed.")
@@ -120,8 +122,8 @@ class HttpRequest(BaseRequest):
                 yield bytes(message.get("body", b""))  # some servers return bytearray
                 if not message.get("more_body", False):
                     break
-            elif message["type"] == "http.disconnect":
-                raise IOError("Client disconnected")
+            elif message["type"] == "http.disconnect":  # pragma: no cover
+                raise IOError("Client disconnected.")
 
     async def get_body(self, limit=10 * 2 ** 20):
         """ Async function to get the bytes of the body.
@@ -135,7 +137,7 @@ class HttpRequest(BaseRequest):
                 nbytes += len(chunk)
                 if nbytes > limit:
                     chunks.clear()
-                    raise IOError("Request body too large")
+                    raise IOError("Request body too large.")
                 chunks.append(chunk)
             self._body = b"".join(chunks)
         return self._body
@@ -187,9 +189,9 @@ class WebsocketRequest(BaseRequest):
             if mt == "websocket.disconnect":
                 self._client_state = DISCONNECTED
             return message
-        else:
+        else:  # pragma: no cover
             raise RuntimeError(
-                'Cannot call "receive" once a disconnect message has been received.'
+                'Cannot call "receive" after the client disconnect message has been received.'
             )
 
     async def raw_send(self, message):
@@ -224,14 +226,11 @@ class WebsocketRequest(BaseRequest):
             await self.raw_receive()
         await self.raw_send({"type": "websocket.accept", "subprotocol": subprotocol})
 
-    def _raise_on_disconnect(self, message):
-        if message["type"] == "websocket.disconnect":
-            raise IOError("Websocket disconnect", message["code"])
-
     async def receive_iter(self):
         """ Async generator to iterate over incoming messaged as long
         as the connection is not closed. Each message can be a ``bytes`` or ``str``.
         """
+        assert self._application_state == CONNECTED, self._application_state
         while True:
             message = await self.raw_receive()
             if message["type"] == "websocket.disconnect":
@@ -245,7 +244,8 @@ class WebsocketRequest(BaseRequest):
         """
         assert self._application_state == CONNECTED, self._application_state
         message = await self.raw_receive()
-        self._raise_on_disconnect(message)
+        if message["type"] == "websocket.disconnect":
+            raise IOError("Websocket disconnect", message.get("code", 1000))
         return message.get("bytes", None) or message.get("text", None) or b""
 
     # todo: maybe receive_bytes and/or receive_text?

@@ -227,6 +227,51 @@ def test_chunking():
     assert res.body.decode() == "foobar"
     assert not p.out
 
+    # Read
+
+    async def handler_chunkread1(request):
+        body = []
+        async for chunk in request.iter_body():
+            body.append(chunk)
+        return b"".join(body)
+
+    with make_server(handler_chunkread1) as p:
+        res = p.post("/", b"foobar")
+
+    assert res.status == 200
+    assert res.body.decode() == "foobar"
+    assert not p.out
+
+    # Read empty body
+
+    async def handler_chunkread2(request):
+        body = []
+        async for chunk in request.iter_body():
+            body.append(chunk)
+        return b"".join(body)
+
+    with make_server(handler_chunkread2) as p:
+        res = p.post("/")
+
+    assert res.status == 200
+    assert res.body.decode() == ""
+    assert not p.out
+
+    # Both
+
+    async def handler_chunkread3(request):
+        return request.iter_body()  # echo :)
+
+    with make_server(handler_chunkread3) as p:
+        res = p.post("/", b"foobar")
+
+    assert res.status == 200
+    assert res.body.decode() == "foobar"
+    assert not p.out
+
+
+def test_chunking_fails():
+
     # Write fail - cannot be regular generator
 
     async def handler_chunkwrite_fail1(request):
@@ -258,32 +303,40 @@ def test_chunking():
     assert "body cannot be" in res.body.decode().lower()
     assert "body cannot be" in p.out.lower()
 
-    # Read
+    # Read fail - cannot iter twice
 
-    async def handler_chunkread1(request):
-        body = []
+    async def handler_chunkfail3(request):
         async for chunk in request.iter_body():
-            body.append(chunk)
-        return b"".join(body)
+            pass
+        async for chunk in request.iter_body():
+            pass
+        chunk
+        return "ok"
 
-    with make_server(handler_chunkread1) as p:
-        res = p.post("/", b"foobar")
+    with make_server(handler_chunkfail3) as p:
+        res = p.post("/", b"x")
+
+    assert res.status == 500
+    assert "body was already consumed" in res.body.decode().lower()
+    assert "body was already consumed" in p.out.lower()
+
+    # Exceed memory
+
+    async def handler_exceed_memory(request):
+        await request.get_body(10)  # 10 bytes
+        return "ok"
+
+    with make_server(handler_exceed_memory) as p:
+        res = p.post("/", b"xxxxxxxxxx")
 
     assert res.status == 200
-    assert res.body.decode() == "foobar"
-    assert not p.out
 
-    # Both
+    with make_server(handler_exceed_memory) as p:
+        res = p.post("/", b"xxxxxxxxxxx")
 
-    async def handler_chunkread2(request):
-        return request.iter_body()  # echo :)
-
-    with make_server(handler_chunkread2) as p:
-        res = p.post("/", b"foobar")
-
-    assert res.status == 200
-    assert res.body.decode() == "foobar"
-    assert not p.out
+    assert res.status == 500
+    assert "request body too large" in res.body.decode().lower()
+    assert "request body too large" in p.out.lower()
 
 
 ## Test exceptions and errors
@@ -498,7 +551,6 @@ if __name__ == "__main__":
     from common import run_tests, set_backend_from_argv
 
     set_backend_from_argv()
-
     run_tests(globals())
 
     # with make_server(handler_err2) as p:

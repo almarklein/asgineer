@@ -138,6 +138,55 @@ def test_websocket_echo():
     assert not p.out
 
 
+def test_websocket_receive():
+    async def handle_ws(request):
+        await request.accept()
+        print(await request.receive_json())
+        print(await request.receive_json())
+        sys.stdout.flush()
+
+    async def client(ws):
+        await ws.send('{"foo": 3}')
+        await ws.send(b'{"bar": 3}')
+
+    with make_server(handle_ws) as p:
+        p.ws_communicate("/", client)
+
+    assert p.out == "{'foo': 3}\n{'bar': 3}"
+
+
+def test_websocket_receive_too_much():
+    async def handle_ws(request):
+        await request.accept()
+        print(await request.receive())
+        print(await request.receive())
+        sys.stdout.flush()
+
+    async def client(ws):
+        await ws.send("hellow")
+
+    with make_server(handle_ws) as p:
+        p.ws_communicate("/", client)
+
+    assert "hellow" in p.out
+    assert "IOError" in p.out and "websocket disconnect" in p.out.lower()
+    assert "KeyError" not in p.out
+
+
+def test_websocket_send_invalid_data():
+    async def handle_ws(request):
+        await request.accept()
+        await request.send(4)
+
+    async def client(ws):
+        await ws.send("hellow")
+
+    with make_server(handle_ws) as p:
+        p.ws_communicate("/", client)
+
+    assert "TypeError" in p.out
+
+
 def test_websocket_no_accept():
     async def handle_ws(request):
         await request.send("some text")
