@@ -32,4 +32,5 @@ Cool stuff:
     start
     guide
     reference
+    testutils
     asgi

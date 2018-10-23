@@ -1,5 +1,6 @@
 """
-Utilities for writing tests with Asgish handlers.
+The ``asgish.testutils`` module provides utilities to help test
+applications build with ASGI and Asgish. 
 """
 
 import os
@@ -212,9 +213,9 @@ def load_module(name, filename):
 
 
 class ProcessTestServer(BaseTestServer):
-    """ Test server that runs an actual server in a subprocess. The ``server``
-    argument must be a server supported by Asgish' ``run()`` function, like
-    "uvicorn", "hypercorn" or "daphne".
+    """ Subclass of BaseTestServer that runs an actual server in a
+    subprocess. The ``server`` argument must be a server supported by
+    Asgish' ``run()`` function, like "uvicorn", "hypercorn" or "daphne".
     
     This provides a very realistic approach to test server applicationes, though
     the overhead of starting and stopping the server costs about a second,
@@ -327,9 +328,10 @@ class ProcessTestServer(BaseTestServer):
 
 
 class MockTestServer(BaseTestServer):
-    """ Test server that mocks an ASGI server and operates in-process.
-    This is a less realistic approach, but faster and allows tracking
-    test coverage, so it's more suited for unit tests.
+    """ Subclass of BaseTestServer that mocks an ASGI server and
+    operates in-process. This is a less realistic approach, but faster
+    and allows tracking test coverage, so it's more suited for unit
+    tests.
     
     Requests *must* be done via the methods of this object. The used url
     can be anything.

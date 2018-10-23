@@ -96,8 +96,8 @@ class BaseRequest:
 
 
 class HttpRequest(BaseRequest):
-    """ Representation of an HTTP request. An object of this class is
-    passed to the request handler.
+    """ Subclass of BaseRequest to represent an HTTP request. An object
+    of this class is passed to the request handler.
     """
 
     __slots__ = ("_receive", "_iter_done", "_body")
@@ -155,8 +155,8 @@ DISCONNECTED = 2
 
 
 class WebsocketRequest(BaseRequest):
-    """ Representation of a websocket request. An object of this class is
-    passed to the request handler.
+    """ Subclass of BaseRequest to represent a websocket request. An
+    object of this class is passed to the request handler.
     """
 
     __slots__ = ("_receive", "_send", "_client_state", "_application_state")
