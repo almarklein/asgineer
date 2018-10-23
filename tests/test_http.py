@@ -1,3 +1,7 @@
+"""
+Test behavior for HTTP request handlers.
+"""
+
 import json
 
 import pytest
@@ -32,9 +36,6 @@ async def handler2(request):
 
 
 async def handler3(request):
-    async def handler1(request):
-        return 200, {"xx-foo": "x"}, "hi!"
-
     async def handler2(request):
         return await handler1(request)
 
@@ -55,18 +56,6 @@ async def handler6(request):
 
 async def handler7(request):
     return {"xx-foo": "x"}, "ho!"
-
-
-async def handler_json1(request):
-    return {"foo": 42, "bar": 7}
-
-
-async def handler_html1(request):
-    return "<!DOCTYPE html> <html>foo</html>"
-
-
-async def handler_html2(request):
-    return "<html>foo</html>"
 
 
 def test_normal_usage():
@@ -156,7 +145,10 @@ def test_body_types():
 
     # Plain text
 
-    with make_server(handler4) as p:
+    async def handler_text(request):
+        return "ho!"
+
+    with make_server(handler_text) as p:
         res = p.get("/")
 
     assert res.status == 200
@@ -166,6 +158,9 @@ def test_body_types():
 
     # Json
 
+    async def handler_json1(request):
+        return {"foo": 42, "bar": 7}
+
     with make_server(handler_json1) as p:
         res = p.get("/")
 
@@ -174,7 +169,25 @@ def test_body_types():
     assert json.loads(res.body.decode()) == {"foo": 42, "bar": 7}
     assert not p.out
 
+    # Dicts can be non-jsonabe
+
+    async def handler_json2(request):
+        return {"foo": 42, "bar": b"x"}
+
+    with make_server(handler_json2) as p:
+        res = p.get("/")
+
+    assert res.status == 500
+    assert "could not json encode" in res.body.decode().lower()
+    assert "could not json encode" in p.out.lower()
+
     # HTML
+
+    async def handler_html1(request):
+        return "<!DOCTYPE html> <html>foo</html>"
+
+    async def handler_html2(request):
+        return "<html>foo</html>"
 
     with make_server(handler_html1) as p:
         res = p.get("/")
@@ -196,28 +209,16 @@ def test_body_types():
 ## Chunking
 
 
-async def handler_chunkwrite1(request):
-    async def asynciter():
-        yield "foo"
-        yield "bar"
-
-    return 200, {}, asynciter()
-
-
-async def handler_chunkread1(request):
-    body = []
-    async for chunk in request.iter_body():
-        body.append(chunk)
-    return b"".join(body)
-
-
-async def handler_chunkread2(request):
-    return request.iter_body()  # echo :)
-
-
 def test_chunking():
 
     # Write
+
+    async def handler_chunkwrite1(request):
+        async def asynciter():
+            yield "foo"
+            yield "bar"
+
+        return 200, {}, asynciter()
 
     with make_server(handler_chunkwrite1) as p:
         res = p.get("/")
@@ -226,7 +227,44 @@ def test_chunking():
     assert res.body.decode() == "foobar"
     assert not p.out
 
+    # Write fail - cannot be regular generator
+
+    async def handler_chunkwrite_fail1(request):
+        def synciter():
+            yield "foo"
+            yield "bar"
+
+        return 200, {}, synciter()
+
+    with make_server(handler_chunkwrite_fail1) as p:
+        res = p.get("/")
+
+    assert res.status == 500
+    assert "cannot be a regular generator" in res.body.decode().lower()
+    assert "cannot be a regular generator" in p.out.lower()
+
+    # Write fail - cannot be (normal or async) func
+
+    async def handler_chunkwrite_fail2(request):
+        async def func():
+            return "foo"
+
+        return 200, {}, func
+
+    with make_server(handler_chunkwrite_fail2) as p:
+        res = p.get("/")
+
+    assert res.status == 500
+    assert "body cannot be" in res.body.decode().lower()
+    assert "body cannot be" in p.out.lower()
+
     # Read
+
+    async def handler_chunkread1(request):
+        body = []
+        async for chunk in request.iter_body():
+            body.append(chunk)
+        return b"".join(body)
 
     with make_server(handler_chunkread1) as p:
         res = p.post("/", b"foobar")
@@ -236,6 +274,9 @@ def test_chunking():
     assert not p.out
 
     # Both
+
+    async def handler_chunkread2(request):
+        return request.iter_body()  # echo :)
 
     with make_server(handler_chunkread2) as p:
         res = p.post("/", b"foobar")
@@ -373,7 +414,7 @@ def test_wrong_output():
     assert "handler returned 4-tuple" in p.out.lower()
 
     for handler in (handler_output2, handler_output3, handler_output6):
-        with make_server(handler_output2) as p:
+        with make_server(handler) as p:
             res = p.get("/")
 
         assert res.status == 500
@@ -410,6 +451,25 @@ def test_wrong_output():
     assert res.status == 200  # too late to set status!
     assert res.body.decode() == "foo"
     assert "body chunk must be" in p.out.lower()
+
+    # Wrong header
+
+    async def wrong_header1(request):
+        return 200, {"foo": 3}, b""
+
+    async def wrong_header2(request):
+        return 200, {b"foo": "bar"}, b""
+
+    async def wrong_header3(request):
+        return 200, {"foo": b"bar"}, b""
+
+    for handler in (wrong_header1, wrong_header2, wrong_header3):
+        with make_server(handler) as p:
+            res = p.get("/")
+
+        assert res.status == 500
+        assert "header keys and values" in res.body.decode().lower()
+        assert "header keys and values" in p.out.lower()
 
 
 ## Test wrong usage

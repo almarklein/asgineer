@@ -1,3 +1,7 @@
+"""
+Test behavior for websocket handlers.
+"""
+
 import sys
 
 from common import make_server
