@@ -17,16 +17,19 @@ branches:
 
 matrix:
     include:
-        - python: "3.6"
+        - python: "3.7"
           env: TEST_STYLE=1
         - python: "3.6"
-          env: ASGISH_SERVER=uvicorn
+          env: ASGI_SERVER=mock
         - python: "3.7"
-          env: ASGISH_SERVER=uvicorn
+          env: ASGI_SERVER=mock
         - python: "3.7"
-          env: ASGISH_SERVER=hypercorn
+          env: ASGI_SERVER=uvicorn
+        # Disabled until hypercorn is fixed
+        #- python: "3.7"
+        #  env: ASGI_SERVER=hypercorn
         - python: "3.7"
-          env: ASGISH_SERVER=daphne
+          env: ASGI_SERVER=daphne
 
 before_install:
     - SRC_DIR=$(pwd);
@@ -36,16 +39,16 @@ install:
     - if [ "${TEST_STYLE}" == "1" ]; then
         pip install black pyflakes;
       else
-        pip install pytest pytest-cov requests autobahn;
+        pip install pytest pytest-cov requests websockets;
         python setup.py install;
       fi;
-    - if [ "${ASGISH_SERVER}" == "uvicorn" ]; then
+    - if [ "${ASGI_SERVER}" == "uvicorn" ]; then
         pip install uvicorn;
       fi;
-    - if [ "${ASGISH_SERVER}" == "hypercorn" ]; then
+    - if [ "${ASGI_SERVER}" == "hypercorn" ]; then
         pip install hypercorn;
       fi;
-    - if [ "${ASGISH_SERVER}" == "daphne" ]; then
+    - if [ "${ASGI_SERVER}" == "daphne" ]; then
         pip install daphne;
       fi;
 
@@ -56,7 +59,8 @@ script:
         black --check .;
         pyflakes .;
       else
-        pytest -v --cov=asgish tests;
+        cd tests;
+        PYTHONPATH=${SRC_DIR} pytest -v --cov=asgish --cov-report=term-missing .;
       fi;
 
 after_success:

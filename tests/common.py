@@ -5,13 +5,13 @@ from asgish.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():
-    return os.environ.get("ASGISH_SERVER", "uvicorn").lower()
+    return os.environ.get("ASGI_SERVER", "mock").lower()
 
 
 def set_backend_from_argv():
     for arg in sys.argv:
-        if arg.upper().startswith("--ASGISH_SERVER="):
-            os.environ["ASGISH_SERVER"] = arg.split("=")[1].strip().lower()
+        if arg.upper().startswith("--ASGI_SERVER="):
+            os.environ["ASGI_SERVER"] = arg.split("=")[1].strip().lower()
 
 
 def run_tests(scope):
