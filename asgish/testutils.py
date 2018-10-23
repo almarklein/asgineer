@@ -34,6 +34,9 @@ class BaseTestServer:
     """ Base class for test servers. Objects of this class represent an ASGI
     server instance that can be used to test your server implementation.
     
+    The ``app`` object passed to the constructor can be an ASGI application
+    or an async (Asgish-style) handler.
+    
     The server can be started/stopped by using it as a context manager.
     The ``url`` attribute represents the url that can be used to make
     requests to the server. When the server has stopped, The ``out``
@@ -43,9 +46,10 @@ class BaseTestServer:
     context manager) at any given time.
     """
 
-    def __init__(self, app, server_description):
+    def __init__(self, app, server_description, *, loop=None):
         self._app = app
         self._server = server_description
+        self._loop = asyncio.get_event_loop() if loop is None else loop
         self._out = ""
         # Get stdout funcs because the mock server hijacks them
         self._stdout_write = sys.stdout.write
@@ -71,7 +75,7 @@ class BaseTestServer:
         return self._out
 
     def __enter__(self):
-        self.log(f"  Spawn {self._server} server .. ", end="")
+        self.log(f"  Create {self._server} server .. ", end="")
         self._out = ""
         t0 = time.time()
 
@@ -93,56 +97,59 @@ class BaseTestServer:
             self.log("Process output:")
             self.log(self.out)
 
-    def get(self, url, data=None, headers=None, **kwargs):
+    def get(self, path, data=None, headers=None, **kwargs):
         """ Send a GET request to the server. See request() for detais.
         """
-        return self.request("GET", url, data=data, headers=headers, **kwargs)
+        return self.request("GET", path, data=data, headers=headers, **kwargs)
 
-    def put(self, url, data=None, headers=None, **kwargs):
+    def put(self, path, data=None, headers=None, **kwargs):
         """ Send a PUT request to the server. See request() for detais.
         """
-        return self.request("PUT", url, data=data, headers=headers, **kwargs)
+        return self.request("PUT", path, data=data, headers=headers, **kwargs)
 
-    def post(self, url, data=None, headers=None, **kwargs):
+    def post(self, path, data=None, headers=None, **kwargs):
         """ Send a POST request to the server. See request() for detais.
         """
-        return self.request("POST", url, data=data, headers=headers, **kwargs)
+        return self.request("POST", path, data=data, headers=headers, **kwargs)
 
-    def delete(self, url, data=None, headers=None, **kwargs):
+    def delete(self, path, data=None, headers=None, **kwargs):
         """ Send a DELETE request to the server. See request() for detais.
         """
-        return self.request("DELETE", url, data=data, headers=headers, **kwargs)
+        return self.request("DELETE", path, data=data, headers=headers, **kwargs)
 
-    def request(self, method, url, data=None, headers=None, **kwargs):
-        """ Send a request to the server. Use the ``url`` property to get the base
-        url. Returns a named tuple ``(status, headers, body)``.
+    def request(self, method, path, data=None, headers=None, **kwargs):
+        """ Send a request to the server. Returns a named tuple ``(status, headers, body)``.
         
         Arguments:
             method (str): the HTTP method (e.g. "GET")
-            url (str): the url (also see the ``url`` property).
+            path (str): path or url (also see the ``url`` property).
             data: the bytes to send (optional).
             headers: headers to send (optional).
             kwargs: additional arguments to pass to ``requests.request()``.
         
         """
         assert isinstance(method, str)
-        assert isinstance(url, str)
+        assert isinstance(path, str)
+        if path.startswith("http"):
+            url = path
+        else:
+            url = self.url + "/" + path.lstrip("/")
 
-        status, headers, body = self._request(
-            method, url, data=data, headers=headers, **kwargs
-        )
+        co = self._co_request(method, url, data=data, headers=headers, **kwargs)
+        status, headers, body = self._loop.run_until_complete(co)
         return Response(status, headers, body)
 
     def ws_communicate(self, path, client_co_func, loop=None):
         """ Do a websocket request and communicate over the connection.
+        
         The ``client_co_func`` object must be an async function, it receives
-        a ws object as an argument with methods ``send``, ``receive`` and ``close``,
-        and it can be iterated over. Messages are either str or bytes.
+        a ws object as an argument, which has methods ``send``, ``receive`` and
+        ``close``, and it can be iterated over. Messages are either str or bytes.
         """
         url = self.url.replace("http", "ws") + "/" + path.lstrip("/")
         if loop is None:
             loop = asyncio.get_event_loop()
-        co = self._ws_communicate(url, client_co_func, loop)
+        co = self._co_ws_communicate(url, client_co_func, loop)
         return loop.run_until_complete(co)
 
     def log(self, *messages, sep=" ", end="\n"):
@@ -218,8 +225,8 @@ class ProcessTestServer(BaseTestServer):
     request library.
     """
 
-    def __init__(self, app, server):
-        super().__init__(app, server)
+    def __init__(self, app, server, **kwargs):
+        super().__init__(app, server, **kwargs)
         self._app_code = self._get_app_code(app)
 
     def _get_app_code(self, app):
@@ -304,11 +311,11 @@ class ProcessTestServer(BaseTestServer):
         except Exception:
             pass
 
-    def _request(self, method, url, **kwargs):
+    async def _co_request(self, method, url, **kwargs):
         r = requests.request(method, url, **kwargs)
         return r.status_code, r.headers, r.content
 
-    async def _ws_communicate(self, url, client_co_func, loop):
+    async def _co_ws_communicate(self, url, client_co_func, loop):
         import websockets
 
         try:
@@ -328,15 +335,14 @@ class MockTestServer(BaseTestServer):
     can be anything.
     """
 
-    def __init__(self, app, loop=None):
-        super().__init__(app, "mock")
+    def __init__(self, app, **kwargs):
+        super().__init__(app, "mock", **kwargs)
 
         if inspect.iscoroutinefunction(app):
             self._asgi_app = asgish.to_asgi(app)
         else:
             self._asgi_app = app
 
-        self._loop = asyncio.get_event_loop() if loop is None else loop
         self._out_writes = []
 
     def _write(self, msg):
@@ -403,123 +409,6 @@ class MockTestServer(BaseTestServer):
         self._lifespan_messages.append({"type": f"lifespan.{what}"})
         self._loop.run_until_complete(waiter())
 
-    def _request(self, method, url, **kwargs):
-        co = self._co_request(method, url, **kwargs)
-        return self._loop.run_until_complete(co)
-
-    async def _co_request(self, method, url, **kwargs):
-        req = requests.Request(method, url, **kwargs)
-        p = req.prepare()  # Get the "resolved" request
-        p.headers.setdefault("user-agent", "asgi_mock_server")
-
-        scope = self._make_scope(p)
-        app_object = self._asgi_app(scope)
-
-        # ---
-
-        client_to_server = []
-        server_to_client = []
-        if p.body is not None:
-            client_to_server.append(p.body)
-
-        async def receive():
-            if client_to_server:
-                chunk = client_to_server.pop(0)
-                return {
-                    "type": "http.request",
-                    "body": chunk,
-                    "more_body": bool(client_to_server),
-                }
-            else:
-                return {"type": "http.disconnect"}
-
-        async def send(m):
-            if m["type"] == "http.response.start":
-                headers = dict((h[0].decode(), h[1].decode()) for h in m["headers"])
-                headers.setdefault("date", format_date_time(time.time()))
-                headers.setdefault("server", "asgish_mock_server")
-                response.extend([m["status"], headers])
-            elif m["type"] == "http.response.body":
-                server_to_client.append(m["body"])
-            else:
-                pass  # ignore?
-
-        response = []
-        await app_object(receive, send)
-        response.append(b"".join(server_to_client))
-        return tuple(response)
-
-    async def _ws_communicate(self, url, client_co_func, loop):
-
-        req = requests.Request("GET", url)
-        p = req.prepare()  # Get the "resolved" request
-        p.headers.setdefault("user-agent", "asgi_mock_server")
-
-        scope = self._make_scope(p)
-        app_object = self._asgi_app(scope)
-
-        # ---
-
-        client_to_server = []
-        server_to_client = []
-
-        async def receive():
-            while not client_to_server:
-                await asyncio.sleep(0.02)
-            return client_to_server.pop(0)
-
-        async def send(m):
-            server_to_client.append(m)
-
-        class Ws:
-            def __init__(self):
-                self._closed = False
-                self._accepted = False
-
-            async def send(self, value):
-                if isinstance(value, bytes):
-                    m = {"type": "websocket.receive", "bytes": value}
-                elif isinstance(value, str):
-                    m = {"type": "websocket.receive", "text": value}
-                else:
-                    raise TypeError("Can only send bytes/str/dict.")
-                client_to_server.append(m)
-
-            async def receive(self):
-                # Wait for message to become available
-                if self._closed:
-                    raise IOError("WS is closed")
-                while not server_to_client:
-                    await asyncio.sleep(0.02)
-                # Get message and handle special cases
-                m = server_to_client.pop(0)
-                if m["type"] in ("websocket.disconnect", "websocket.close"):
-                    self._closed = True
-                    raise IOError("WS closed")
-                if m["type"] == "websocket.accept":
-                    self._accepted = True
-                    return await self.receive()
-                # Return
-                return m.get("bytes", None) or m.get("text", None) or b""
-
-            async def close(self):
-                client_to_server.append({"type": "websocket.disconnect"})
-                self._closed = True
-
-            async def __aiter__(self):
-                while True:
-                    try:
-                        yield await self.receive()
-                    except IOError:
-                        return
-
-        self._loop.create_task(app_object(receive, send))
-        client_to_server.append({"type": "websocket.connect"})
-        ws = Ws()
-        result = await client_co_func(ws)
-        client_to_server.append({"type": "websocket.disconnect"})
-        return result
-
     def _make_scope(self, request):
         scheme, netloc, path, params, query, fragement = urlparse(request.url)
         if ":" in netloc:
@@ -570,3 +459,116 @@ class MockTestServer(BaseTestServer):
             }
         else:
             raise RuntimeError(f"Unknown scheme: {scheme}")
+
+    async def _co_request(self, method, url, **kwargs):
+        req = requests.Request(method, url, **kwargs)
+        p = req.prepare()  # Get the "resolved" request
+        p.headers.setdefault("user-agent", "asgi_mock_server")
+
+        scope = self._make_scope(p)
+        app_object = self._asgi_app(scope)
+
+        # ---
+
+        client_to_server = []
+        server_to_client = []
+        if p.body is not None:
+            client_to_server.append(p.body)
+
+        async def receive():
+            if client_to_server:
+                chunk = client_to_server.pop(0)
+                return {
+                    "type": "http.request",
+                    "body": chunk,
+                    "more_body": bool(client_to_server),
+                }
+            else:
+                return {"type": "http.disconnect"}
+
+        async def send(m):
+            if m["type"] == "http.response.start":
+                headers = dict((h[0].decode(), h[1].decode()) for h in m["headers"])
+                headers.setdefault("date", format_date_time(time.time()))
+                headers.setdefault("server", "asgish_mock_server")
+                response.extend([m["status"], headers])
+            elif m["type"] == "http.response.body":
+                server_to_client.append(m["body"])
+            else:
+                pass  # ignore?
+
+        response = []
+        await app_object(receive, send)
+        response.append(b"".join(server_to_client))
+        return tuple(response)
+
+    async def _co_ws_communicate(self, url, client_co_func, loop):
+
+        req = requests.Request("GET", url)
+        p = req.prepare()  # Get the "resolved" request
+        p.headers.setdefault("user-agent", "asgi_mock_server")
+
+        scope = self._make_scope(p)
+        app_object = self._asgi_app(scope)
+
+        # ---
+
+        client_to_server = []
+        server_to_client = []
+
+        async def receive():
+            while not client_to_server:
+                await asyncio.sleep(0.02)
+            return client_to_server.pop(0)
+
+        async def send(m):
+            server_to_client.append(m)
+
+        class WS:
+            def __init__(self):
+                self._closed = False
+                self._accepted = False
+
+            async def send(self, value):
+                if isinstance(value, bytes):
+                    m = {"type": "websocket.receive", "bytes": value}
+                elif isinstance(value, str):
+                    m = {"type": "websocket.receive", "text": value}
+                else:
+                    raise TypeError("Can only send bytes/str/dict.")
+                client_to_server.append(m)
+
+            async def receive(self):
+                # Wait for message to become available
+                if self._closed:
+                    raise IOError("WS is closed")
+                while not server_to_client:
+                    await asyncio.sleep(0.02)
+                # Get message and handle special cases
+                m = server_to_client.pop(0)
+                if m["type"] in ("websocket.disconnect", "websocket.close"):
+                    self._closed = True
+                    raise IOError("WS closed")
+                if m["type"] == "websocket.accept":
+                    self._accepted = True
+                    return await self.receive()
+                # Return
+                return m.get("bytes", None) or m.get("text", None) or b""
+
+            async def close(self):
+                client_to_server.append({"type": "websocket.disconnect"})
+                self._closed = True
+
+            async def __aiter__(self):
+                while True:
+                    try:
+                        yield await self.receive()
+                    except IOError:
+                        return
+
+        loop.create_task(app_object(receive, send))
+        client_to_server.append({"type": "websocket.connect"})
+        ws = WS()
+        result = await client_co_func(ws)
+        client_to_server.append({"type": "websocket.disconnect"})
+        return result

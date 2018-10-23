@@ -74,7 +74,7 @@ def test_normal_usage():
     # Test normal usage
 
     with make_server(handler1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     print(res.status)
     print(res.headers)
@@ -98,7 +98,7 @@ def test_normal_usage():
     # Test delegation to other handler
 
     with make_server(handler2) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "hi!"
@@ -108,7 +108,7 @@ def test_normal_usage():
     # Test delegation to yet other handler
 
     with make_server(handler3) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "hi!"
@@ -121,14 +121,14 @@ def test_output_shapes():
     # Singleton arg
 
     with make_server(handler4) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "ho!"
     assert not p.out
 
     with make_server(handler5) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "ho!"
@@ -137,14 +137,14 @@ def test_output_shapes():
     # Two element tuple (two forms, one is flawed)
 
     with make_server(handler6) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "Headers must be a dict" in res.body.decode()
     assert "Headers must be a dict" in p.out
 
     with make_server(handler7) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "ho!"
@@ -157,7 +157,7 @@ def test_body_types():
     # Plain text
 
     with make_server(handler4) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.headers["content-type"] == "text/plain"
@@ -167,7 +167,7 @@ def test_body_types():
     # Json
 
     with make_server(handler_json1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.headers["content-type"] == "application/json"
@@ -177,7 +177,7 @@ def test_body_types():
     # HTML
 
     with make_server(handler_html1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.headers["content-type"] == "text/html"
@@ -185,7 +185,7 @@ def test_body_types():
     assert not p.out
 
     with make_server(handler_html2) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.headers["content-type"] == "text/html"
@@ -220,7 +220,7 @@ def test_chunking():
     # Write
 
     with make_server(handler_chunkwrite1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "foobar"
@@ -229,7 +229,7 @@ def test_chunking():
     # Read
 
     with make_server(handler_chunkread1) as p:
-        res = p.post(p.url, b"foobar")
+        res = p.post("/", b"foobar")
 
     assert res.status == 200
     assert res.body.decode() == "foobar"
@@ -238,7 +238,7 @@ def test_chunking():
     # Both
 
     with make_server(handler_chunkread2) as p:
-        res = p.post(p.url, b"foobar")
+        res = p.post("/", b"foobar")
 
     assert res.status == 200
     assert res.body.decode() == "foobar"
@@ -278,7 +278,7 @@ def test_errors():
     # Explicit error
 
     with make_server(handler_err1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 501
     assert res.body.decode() == "oops"
@@ -288,7 +288,7 @@ def test_errors():
     # Exception in handler
 
     with make_server(handler_err2) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "error in request handler" in res.body.decode().lower()
@@ -301,7 +301,7 @@ def test_errors():
     # Exception in handler with chunked body
 
     with make_server(handler_err3) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "error in chunked response" in res.body.decode().lower()
@@ -312,7 +312,7 @@ def test_errors():
     # Exception in handler with chunked body, too late
 
     with make_server(handler_err4) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200
     assert res.body.decode() == "foo"
@@ -366,7 +366,7 @@ async def handler_output12(request):
 def test_wrong_output():
 
     with make_server(handler_output1) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "handler returned 4-tuple" in res.body.decode().lower()
@@ -374,21 +374,21 @@ def test_wrong_output():
 
     for handler in (handler_output2, handler_output3, handler_output6):
         with make_server(handler_output2) as p:
-            res = p.get(p.url)
+            res = p.get("/")
 
         assert res.status == 500
         assert "body cannot be" in res.body.decode().lower()
         assert "body cannot be" in p.out.lower()
 
     with make_server(handler_output4) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "status code must be an int" in res.body.decode().lower()
     assert "status code must be an int" in p.out.lower()
 
     with make_server(handler_output5) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "headers must be a dict" in res.body.decode().lower()
@@ -397,7 +397,7 @@ def test_wrong_output():
     # Chunked
 
     with make_server(handler_output11) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 500
     assert "error in chunked response" in res.body.decode().lower()
@@ -405,7 +405,7 @@ def test_wrong_output():
     assert "body chunk must be" in p.out.lower()
 
     with make_server(handler_output12) as p:
-        res = p.get(p.url)
+        res = p.get("/")
 
     assert res.status == 200  # too late to set status!
     assert res.body.decode() == "foo"
