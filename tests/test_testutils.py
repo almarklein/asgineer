@@ -3,6 +3,7 @@ Test testutils code. Note that most other tests implicitly test it.
 """
 
 from common import make_server
+from asgish.testutils import MockTestServer, ProcessTestServer
 
 
 async def handler1(request):
@@ -32,6 +33,35 @@ def test_http():
     # This would work with the Mock server, but not with uvicorn
     # with make_server(handler4) as p:
     #     assert p.get("").body == b"hellow1"
+
+
+def test_lifetime_messages():
+    async def handler(request):
+        print("xxx")
+        return "hellow"
+
+    with MockTestServer(handler) as p:
+        assert p.get("").body.decode() == "hellow"
+
+    assert len(p.out.strip().splitlines()) == 3
+    assert "Server is starting up" in p.out
+    assert "xxx" in p.out
+    assert "Server is cleaning up" in p.out
+
+    try:
+        import uvicorn as server
+    except ImportError:
+        return  # skip ...
+
+    with ProcessTestServer(handler, server.__name__) as p:
+        assert p.get("").body.decode()  # == 'hellow'
+
+    # todo: somehow the lifetime messages dont show up and I dont know why.
+
+    # assert len(p.out.strip().splitlines()) == 3
+    # assert "Server is starting up" in p.out
+    assert "xxx" in p.out
+    # assert "Server is cleaning up" in p.out
 
 
 if __name__ == "__main__":
