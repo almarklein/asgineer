@@ -478,6 +478,8 @@ class MockTestServer(BaseTestServer):
         server_to_client = []
         if p.body is not None:
             client_to_server.append(p.body)
+        else:
+            client_to_server.append(b"")
 
         async def receive():
             if client_to_server:
@@ -487,8 +489,6 @@ class MockTestServer(BaseTestServer):
                     "body": chunk,
                     "more_body": bool(client_to_server),
                 }
-            else:
-                return {"type": "http.disconnect"}
 
         async def send(m):
             if m["type"] == "http.response.start":
