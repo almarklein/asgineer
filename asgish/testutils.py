@@ -197,6 +197,7 @@ def proxy_app(scope):
 if __name__ == "__main__":
     threading.Thread(target=closer).start()
     asgish.run("__main__:proxy_app", "ASGISERVER", "localhost:PORT")
+    sys.stderr.flush()
     sys.stdout.flush()
     sys.exit(0)
 """
@@ -296,8 +297,8 @@ class ProcessTestServer(BaseTestServer):
         # Ask process to stop
         self._delfile()
         # Force it to stop if needed
-        for i in range(10):
-            etime = time.time() + 0.5
+        for i in range(5):
+            etime = time.time() + 5
             while self._p.poll() is None and time.time() < etime:
                 time.sleep(0.01)
             if self._p.poll() is not None:
@@ -305,6 +306,8 @@ class ProcessTestServer(BaseTestServer):
             self._p.terminate()
         else:
             raise RuntimeError("Runaway server process failed to terminate!")
+        if self._p.poll():
+            self.log(f"nonzero exit code {self._p.poll()}")
         # Get output
         return self._p.stdout.read().decode(errors="ignore")
 
