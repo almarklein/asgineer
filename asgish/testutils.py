@@ -542,7 +542,7 @@ class MockTestServer(BaseTestServer):
                 elif isinstance(value, str):
                     m = {"type": "websocket.receive", "text": value}
                 else:
-                    raise TypeError("Can only send bytes/str/dict.")
+                    raise TypeError("Can only send bytes/str.")
                 client_to_server.append(m)
 
             async def receive(self):

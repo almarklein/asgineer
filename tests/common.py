@@ -9,7 +9,7 @@ from asgish.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():
-    return os.environ.get("ASGI_SERVER", "mock").lower()
+    return os.environ.get("ASGI_SERVER", "uvicorn").lower()
 
 
 def set_backend_from_argv():
