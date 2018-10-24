@@ -103,7 +103,6 @@ to send and receive messages:
         # Note: the websocket connection is closed when the handler returns
 
 
-
 ----
 
 Read the :doc:`reference docs <reference>` to read more about the details.

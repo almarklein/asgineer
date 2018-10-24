@@ -1,8 +1,5 @@
 """
-The ``asgish.testutils`` module provides utilities to help test
-applications build with ASGI and Asgish. Requires the ``requests`` library,
-and the ``websockets`` library when using websockets.
-
+Asgish test utilities.
 """
 
 import os
