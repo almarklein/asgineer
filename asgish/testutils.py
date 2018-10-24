@@ -373,7 +373,7 @@ class MockTestServer(BaseTestServer):
 
     def _stop_server(self):
         try:
-            self._wait_for_lifespan_complete("cleanup")
+            self._wait_for_lifespan_complete("shutdown")
         except Exception as err:
             self._restore_streams()
             raise err
