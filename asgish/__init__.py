@@ -9,4 +9,4 @@ from ._run import run
 
 __all__ = ["BaseRequest", "HttpRequest", "WebsocketRequest", "to_asgi", "run"]
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
