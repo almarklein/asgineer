@@ -18,7 +18,7 @@ branches:
 matrix:
     include:
         - python: "3.7"
-          env: TEST_STYLE=1
+          env: TEST_STYLE_AND_DOCS=1
         - python: "3.6"
           env: ASGI_SERVER=mock
         - python: "3.7"
@@ -36,8 +36,8 @@ before_install:
 
 install:
     - cd ${SRC_DIR};
-    - if [ "${TEST_STYLE}" == "1" ]; then
-        pip install black pyflakes;
+    - if [ "${TEST_STYLE_AND_DOCS}" == "1" ]; then
+        pip install black pyflakes sphinx;
       else
         pip install pytest pytest-cov requests websockets;
         python setup.py install;
@@ -55,9 +55,10 @@ install:
 script:
     - cd ${SRC_DIR};
     - python -c "import sys; print(sys.version, '\n', sys.prefix)";
-    - if [ "${TEST_STYLE}" == "1" ]; then
+    - if [ "${TEST_STYLE_AND_DOCS}" == "1" ]; then
         black --check .;
         pyflakes .;
+        sphinx-build docs docs/_build;
       else
         cd tests;
         PYTHONPATH=${SRC_DIR} pytest -v --cov=asgish --cov-report=term-missing .;
