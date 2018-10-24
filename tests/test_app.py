@@ -75,7 +75,7 @@ def test_lifespan():
     assert len(cap.messages) == 3
     assert cap.messages[0].lower().count("starting up")
     assert "bullshit" in cap.messages[1] and "unknown" in cap.messages[1].lower()
-    assert cap.messages[2].lower().count("cleaning up")
+    assert cap.messages[2].lower().count("shutting down")
 
 
 if __name__ == "__main__":

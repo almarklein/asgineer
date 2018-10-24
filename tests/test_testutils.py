@@ -106,7 +106,7 @@ def test_lifetime_messages():
     assert len(p.out.strip().splitlines()) == 3
     assert "Server is starting up" in p.out
     assert "xxx" in p.out
-    assert "Server is cleaning up" in p.out
+    assert "Server is shutting down" in p.out
 
     with make_server(handler) as p:
         assert p.get("").body.decode() == "hellow"
@@ -116,7 +116,7 @@ def test_lifetime_messages():
     # assert len(p.out.strip().splitlines()) == 3
     # assert "Server is starting up" in p.out
     assert "xxx" in p.out
-    # assert "Server is cleaning up" in p.out
+    # assert "Server is shutting down" in p.out
 
 
 if __name__ == "__main__":
