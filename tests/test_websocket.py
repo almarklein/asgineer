@@ -156,7 +156,13 @@ def test_websocket_receive():
 
 
 def test_websocket_receive_too_much():
-    async def handle_ws(request):
+    async def handle_ws1(request):
+        await request.accept()
+        async for m in request.receive_iter():
+            print(m)
+        sys.stdout.flush()
+
+    async def handle_ws2(request):
         await request.accept()
         print(await request.receive())
         print(await request.receive())
@@ -164,8 +170,14 @@ def test_websocket_receive_too_much():
 
     async def client(ws):
         await ws.send("hellow")
+        # await ws.close()  # this would be the nice behavior
 
-    with make_server(handle_ws) as p:
+    with make_server(handle_ws1) as p:
+        p.ws_communicate("/", client)
+
+    assert "hellow" == p.out.strip()
+
+    with make_server(handle_ws2) as p:
         p.ws_communicate("/", client)
 
     assert "hellow" in p.out

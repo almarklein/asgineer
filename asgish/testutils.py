@@ -329,7 +329,9 @@ class ProcessTestServer(BaseTestServer):
         except websockets.InvalidStatusCode:
             return None
         ws.receive = ws.recv
-        return await client_co_func(ws)
+        res = await client_co_func(ws)
+        await ws.close()
+        return res
 
 
 class MockTestServer(BaseTestServer):
