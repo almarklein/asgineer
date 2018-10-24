@@ -18,6 +18,11 @@ async def handler2(request):
 app1 = asgish.to_asgi(handler1)
 
 
+@asgish.to_asgi
+async def app2(request):
+    return "hellow2"
+
+
 def test_http():
     async def handler3(request):
         return "hellow3"
@@ -41,8 +46,12 @@ def test_http():
     # with make_server(handler4) as p:
     #     assert p.get("").body == b"hellow1"
 
-    with make_server(app1) as p:
-        assert p.get("").body == b"hellow1"
+    # This would work with the Mock server, but not with uvicorn
+    # with make_server(app1) as p:
+    #    assert p.get("").body == b"hellow1"
+
+    with make_server(app2) as p:
+        assert p.get("").body == b"hellow2"
 
     # This would work with the Mock server, but not with uvicorn
     # with make_server(app3) as p:
@@ -74,8 +83,12 @@ def test_http_mock():
     with MockTestServer(handler4) as p:
         assert p.get("").body == b"hellow1"
 
+    # Only with mock server!
     with MockTestServer(app1) as p:
         assert p.get("").body == b"hellow1"
+
+    with MockTestServer(app2) as p:
+        assert p.get("").body == b"hellow2"
 
     # Only with mock server!
     with MockTestServer(app3) as p:
