@@ -56,7 +56,7 @@ def test_lifespan():
     lifespan_messages = [
         {"type": "lifespan.startup"},
         {"type": "lifespan.bullshit"},
-        {"type": "lifespan.cleanup"},
+        {"type": "lifespan.shutdown"},
     ]
     sent = []
 
@@ -70,7 +70,7 @@ def test_lifespan():
         app_ob = app(scope)
         loop.run_until_complete(app_ob(receive, send))
 
-    assert sent == ["lifespan.startup.complete", "lifespan.cleanup.complete"]
+    assert sent == ["lifespan.startup.complete", "lifespan.shutdown.complete"]
 
     assert len(cap.messages) == 3
     assert cap.messages[0].lower().count("starting up")

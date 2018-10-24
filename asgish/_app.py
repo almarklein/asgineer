@@ -74,13 +74,13 @@ class BaseApplication:
                 except Exception:  # pragma: no cover
                     pass
                 await send({"type": "lifespan.startup.complete"})
-            elif message["type"] == "lifespan.cleanup":
-                # Could do cleanup stuff here
+            elif message["type"] == "lifespan.shutdown":
+                # Could do shutdown stuff here
                 try:
-                    logger.info("Server is cleaning up")
+                    logger.info("Server is shutting down")
                 except Exception:  # pragma: no cover
                     pass
-                await send({"type": "lifespan.cleanup.complete"})
+                await send({"type": "lifespan.shutdown.complete"})
                 return
             else:
                 logger.warn(f"Unknown lifespan message {message['type']}")
