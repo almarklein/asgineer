@@ -32,9 +32,6 @@ def filter_lines(lines):
         "Running on http",
         "Task was destroyed but",
         "task: <Task pending coro",
-        "_GatheringFuture exception was never retrieved",  # hypercorn
-        "future: <_GatheringFuture",
-        "concurrent.futures._base.CancelledError",  # todo: odd
         "[INFO ",
     )
     return [line for line in lines if not line.startswith(skip)]
