@@ -283,7 +283,7 @@ class ProcessTestServer(BaseTestServer):
             try:
                 requests.get(URL + "/specialtestpath/init", timeout=0.01)
                 break
-            except requests.ConnectionError:
+            except (requests.ConnectionError, requests.ReadTimeout):
                 pass
         if self._p.poll() is not None:
             raise RuntimeError(
