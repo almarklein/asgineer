@@ -31,7 +31,10 @@ headers; these are all equivalent:
     return {}, 'hello'
     return 'hello'
 
-In the end, the body of an HTTP response is always binary, but Asgish handles some common cases for you:
+If needed, the :func:`.normalize_response` function can be used to
+turn a response (e.g. of a subhandler) into a 3-element tuple.
+In the end, the body of an HTTP response is always binary, but Asgish
+handles some common cases for you:
 
 * A ``bytes`` object is passed unchanged.
 * A ``str`` object that starts with ``<!DOCTYPE html>`` or ``<html>`` is UTF-8 encoded,
@@ -85,3 +88,13 @@ error message is logged and included in the response.
 In fact, Asgish handles all exceptions, since the ASGI servers log
 errors in different ways (some just ignore them). If an error does fall
 through, it can be considered a bug.
+
+
+Utility functions
+=================
+
+The ``asgish.utils`` module provides a few utilities for common tasks.
+
+.. autofunction:: asgish.utils.normalize_response
+
+.. autofunction:: asgish.utils.make_asset_handler

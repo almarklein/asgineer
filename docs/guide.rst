@@ -28,7 +28,7 @@ running the file as a script:
 .. code-block:: python
     
     if __name__ == '__main__':  
-        asgish.run('hypercorn', main, 'localhost:8080')
+        asgish.run('uvicorn', main, 'localhost:8080')
         # or use 'hypercorn', 'daphne', ...
 
 Alternatively, the above example can be run from the command line, using

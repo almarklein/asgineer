@@ -66,7 +66,7 @@ def normalize_response(response):
         raise ValueError(f"Status code must be an int, not {type(status)}")
     if not isinstance(headers, dict):
         raise ValueError(f"Headers must be a dict, not {type(headers)}")
-    
+
     return status, headers, body
 
 
@@ -162,9 +162,9 @@ class BaseApplication:
 
         # === Process the handler output
         try:
-            
+
             status, headers, body = normalize_response(result)
-            
+
             # Convert the body
             if isinstance(body, bytes):
                 pass
