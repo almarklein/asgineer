@@ -25,8 +25,8 @@ matrix:
           env: ASGI_SERVER=mock
         - python: "3.7"
           env: ASGI_SERVER=uvicorn
-        - python: "3.7"
-          env: ASGI_SERVER=hypercorn
+        #- python: "3.7"  -> Hypercorn's behavior does not work with our test mechanics
+        #  env: ASGI_SERVER=hypercorn
         - python: "3.7"
           env: ASGI_SERVER=daphne
 
