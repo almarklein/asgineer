@@ -48,8 +48,9 @@ Routing
 =======
 
 Asgish takes a "linear" approach to handling request. It avoids magic
-like routing systems, so you can easily follow your request around your code.
-To do your routing, make your main handler delegate to sub-handlers:
+like routing systems, so you can easily follow how requests move through
+your code. To do the routing, make your main handler delegate to
+sub-handlers:
 
 .. code-block:: python
 
