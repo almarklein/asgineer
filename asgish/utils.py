@@ -6,8 +6,10 @@ import gzip
 import hashlib
 import mimetypes
 
-
 from ._app import normalize_response
+
+
+__all__ = ["normalize_response", "make_asset_handler"]
 
 
 def make_asset_handler(assets, max_age=0, min_zip_size=500):
@@ -19,24 +21,24 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
     This function takes care of sending compressed responses, and
     applying appropriate HTTP caching. The ETag header is used so that
     clients can validate the asset, and the handler will send back only
-    a small confirmation if the asset has not changed.
+    a small confirmation if the asset has not changed. This makes is
+    easy to create a reliable and fast asset handler. It may, however,
+    be less suited for large data, since all assets are stored
+    in-memory.
     
-    This function makes is easy to create a reliable and fast asset
-    handler. It may, however, be less suited for large data, since all
-    assets are stored in-memory.
+    Parameters:
     
-    Parameters
-        assets (dict): The assets to server. The keys must be str (this function
-            takes care of making it case insensitive). The values must be bytes
-            or str.
-        max_age (int): The maximum age of the assets. This is used as a hint
-            for the client (e.g. the browser) for how long an asset is "fresh"
-            and can be used before validating it. The default is zero. Can be
-            set higher for assets that hardly ever change (e.g. images). Note
-            that some browsers top this value at 36000 (10 minutes).
-        min_zip_size (int): The minimum size of the body for zipping an asset.
-            Note that responses are only zipped if the request indicates that
-            the client can deal with zipped data.
+    * ``assets (dict)``: The assets to server. The keys must be str (this
+      function takes care of making it case insensitive). The values must be
+      bytes or str.
+    * ``max_age (int)``: The maximum age of the assets. This is used as a hint
+      for the client (e.g. the browser) for how long an asset is "fresh"
+      and can be used before validating it. The default is zero. Can be
+      set higher for assets that hardly ever change (e.g. images). Note
+      that some browsers top this value at 36000 (10 minutes).
+    * ``min_zip_size (int)``: The minimum size of the body for zipping an
+      asset. Note that responses are only zipped if the request indicates that
+      the client can deal with zipped data.
     """
 
     if not isinstance(assets, dict):
