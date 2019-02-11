@@ -177,6 +177,8 @@ class BaseApplication:
                     raise ValueError(
                         f"Body cannot be a regular generator, use an async generator."
                     )
+                elif inspect.iscoroutine(body):
+                    raise ValueError(f"Body cannot be a coroutine, forgot await?")
                 else:
                     raise ValueError(f"Body cannot be {type(body)}.")
 
