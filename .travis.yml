@@ -36,19 +36,19 @@ before_install:
 install:
     - cd ${SRC_DIR};
     - if [ "${TEST_STYLE_AND_DOCS}" == "1" ]; then
-        pip install black pyflakes sphinx;
+        pip install -U black pyflakes sphinx;
       else
-        pip install pytest pytest-cov requests websockets;
+        pip install -U pytest pytest-cov requests websockets;
         python setup.py install;
       fi;
     - if [ "${ASGI_SERVER}" == "uvicorn" ]; then
-        pip install uvicorn;
+        pip install -U uvicorn;
       fi;
     - if [ "${ASGI_SERVER}" == "hypercorn" ]; then
-        pip install hypercorn;
+        pip install -U hypercorn;
       fi;
     - if [ "${ASGI_SERVER}" == "daphne" ]; then
-        pip install daphne;
+        pip install -U daphne;
       fi;
 
 script:
