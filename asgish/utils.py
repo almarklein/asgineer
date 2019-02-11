@@ -7,6 +7,9 @@ import hashlib
 import mimetypes
 
 
+from ._app import normalize_response
+
+
 def make_asset_handler(assets, max_age=0, min_zip_size=500):
     """
     Get a coroutine function that can be used to serve the given assets.
