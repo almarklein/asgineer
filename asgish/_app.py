@@ -42,6 +42,34 @@ def to_asgi(handler):
     return Application
 
 
+def normalize_response(response):
+    """ Normalize the given response, by always returning a 3-element tuple
+    (status, headers, body). The body is not "resolved"; it is safe
+    to call this function multiple times on the same response.
+    """
+    # Get status, headers and body from the response
+    if isinstance(response, tuple):
+        if len(response) == 3:
+            status, headers, body = response
+        elif len(response) == 2:
+            status = 200
+            headers, body = response
+        elif len(response) == 1:
+            status, headers, body = 200, {}, response[0]
+        else:
+            raise ValueError(f"Handler returned {len(response)}-tuple.")
+    else:
+        status, headers, body = 200, {}, response
+
+    # Validate status and headers
+    if not isinstance(status, int):
+        raise ValueError(f"Status code must be an int, not {type(status)}")
+    if not isinstance(headers, dict):
+        raise ValueError(f"Headers must be a dict, not {type(headers)}")
+    
+    return status, headers, body
+
+
 class BaseApplication:
     """ Base ASGI application class.
     """
@@ -134,27 +162,9 @@ class BaseApplication:
 
         # === Process the handler output
         try:
-
-            # Get status, headers and body from the result
-            if isinstance(result, tuple):
-                if len(result) == 3:
-                    status, headers, body = result
-                elif len(result) == 2:
-                    status = 200
-                    headers, body = result
-                elif len(result) == 1:
-                    status, headers, body = 200, {}, result[0]
-                else:
-                    raise ValueError(f"Handler returned {len(result)}-tuple.")
-            else:
-                status, headers, body = 200, {}, result
-
-            # Validate status and headers
-            if not isinstance(status, int):
-                raise ValueError(f"Status code must be an int, not {type(status)}")
-            if not isinstance(headers, dict):
-                raise ValueError(f"Headers must be a dict, not {type(headers)}")
-
+            
+            status, headers, body = normalize_response(result)
+            
             # Convert the body
             if isinstance(body, bytes):
                 pass
