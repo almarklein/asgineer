@@ -20,6 +20,7 @@ def test_namespace():
         "WebsocketRequest",
         "to_asgi",
         "run",
+        "utils",
     }
     assert ns == set(asgish.__all__)
 

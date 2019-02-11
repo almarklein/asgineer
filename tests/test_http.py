@@ -457,6 +457,10 @@ async def handler_output12(request):
     return 200, {"xx-custom": "xx"}, chunkiter()
 
 
+async def handler_output13(request):
+    return handler1(request)  # forgot await
+
+
 def test_wrong_output():
 
     with make_server(handler_output1) as p:
@@ -466,7 +470,12 @@ def test_wrong_output():
     assert "handler returned 4-tuple" in res.body.decode().lower()
     assert "handler returned 4-tuple" in p.out.lower()
 
-    for handler in (handler_output2, handler_output3, handler_output6):
+    for handler in (
+        handler_output2,
+        handler_output3,
+        handler_output6,
+        handler_output13,
+    ):
         with make_server(handler) as p:
             res = p.get("/")
 

@@ -18,7 +18,7 @@ import requests
 import asgish
 
 
-Response = namedtuple("Respone", ["status", "headers", "body"])
+Response = namedtuple("Response", ["status", "headers", "body"])
 
 testfilename = os.path.join(
     tempfile.gettempdir(), f"asgish_test_script_{os.getpid()}.py"
