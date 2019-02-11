@@ -47,8 +47,9 @@ any ASGI server:
 Routing
 =======
 
-To do your routing, check the request object and delegate to
-other handlers:
+Asgish takes a "linear" approach to handling request. It avoids magic
+like routing systems, so you can easily follow your request around your code.
+To do your routing, make your main handler delegate to sub-handlers:
 
 .. code-block:: python
 
@@ -78,6 +79,8 @@ other handlers:
         path = request.path.split('/api/')[-1]
         return {'path', path}
 
+For the common task of serving assets, Asgish provides an easy way to this
+correct and fast, with :func:`.make_asset_handler`.
 
 Websockets
 ==========
