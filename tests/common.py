@@ -9,7 +9,7 @@ from asgish.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():
-    return os.environ.get("ASGI_SERVER", "mock").lower()
+    return os.environ.get("ASGI_SERVER", "hypercorn").lower()
 
 
 def set_backend_from_argv():
@@ -29,7 +29,8 @@ def run_tests(scope):
 def filter_lines(lines):
     # Overloadable line filter
     skip = (
-        "Running on http",
+        "Running on http",  # older hypercorn
+        "Running on 127.",  # older hypercorn
         "Task was destroyed but",
         "task: <Task pending coro",
         "[INFO ",
