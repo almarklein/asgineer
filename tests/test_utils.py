@@ -1,11 +1,17 @@
 import asgish.utils
 
-from common import make_server
+from common import make_server, get_backend
 
-from pytest import raises
+from pytest import raises, skip
+
+
+# def test_normalize_response()  -> tested as part of test_app
 
 
 def test_make_asset_handler():
+
+    if get_backend() != "mock":
+        skip("Can only test this with mock server")
 
     with raises(TypeError):
         asgish.utils.make_asset_handler("not a dict")
