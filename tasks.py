@@ -1,49 +1,30 @@
-"""
-invoke tasks
+""" Invoke tasks for imageio-ffmpeg
 """
 
 import os
 import sys
 import shutil
+import importlib
+import subprocess
 
 from invoke import task
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DOC_DIR = os.path.join(THIS_DIR, "docs")
-DOC_BUILD_DIR = os.path.join(THIS_DIR, "docs", "_build")
+# ---------- Per project config ----------
+
+NAME = "asgish"
+LIBNAME = NAME.replace("-", "_")
+PY_PATHS = [LIBNAME, "tests", "tasks.py", "setup.py"]  # for linting/formatting
+
+# ----------------------------------------
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
+    sys.exit("package NAME seems to be incorrect.")
 
 
 @task
-def clean(ctx):
-    """ clean files from testing/building/etc
-    """
-    for dname in [
-        ".cache",
-        ".hypothesis",
-        ".pytest_cache",
-        "build",
-        "dist",
-        "htmlcov",
-        "asgish.egg-info",
-        "asgish/__pycache__",
-        "tests/__pycache__",
-        "docs/_build",
-    ]:
-        dirname = os.path.join(THIS_DIR, dname)
-        if os.path.isdir(dirname):
-            print("removing", dname)
-            shutil.rmtree(dirname)
-
-    for fname in [".coverage"]:
-        filename = os.path.join(THIS_DIR, fname)
-        if os.path.isfile(filename):
-            print("removing", fname)
-            os.remove(filename)
-
-
-@task
-def tests(ctx, server="mock"):
-    """ run unit tests
+def tests(ctx, server="mock", cover=False):
+    """ Perform unit tests. Use --cover to open a webbrowser to show coverage.
     """
     import pytest  # noqa
 
@@ -52,7 +33,86 @@ def tests(ctx, server="mock"):
     res = pytest.main(
         ["-v", "--cov=asgish", "--cov-report=term", "--cov-report=html", test_path]
     )
-    sys.exit(res)
+    if res:
+        sys.exit(res)
+    if cover:
+        import webbrowser
+
+        webbrowser.open(os.path.join(ROOT_DIR, "htmlcov", "index.html"))
+
+
+@task
+def lint(ctx):
+    """ Validate the code style (e.g. undefined names)
+    """
+    try:
+        importlib.import_module("flake8")
+    except ImportError:
+        sys.exit("You need to ``pip install flake8`` to lint")
+
+    # We use flake8 with minimal settings
+    # http://pep8.readthedocs.io/en/latest/intro.html#error-codes
+    cmd = [sys.executable, "-m", "flake8"] + PY_PATHS + ["--select=F,E11"]
+    ret_code = subprocess.call(cmd, cwd=ROOT_DIR)
+    if ret_code == 0:
+        print("No style errors found")
+    else:
+        sys.exit(ret_code)
+
+
+@task
+def checkformat(ctx):
+    """ Check whether the code adheres to the style rules. Use autoformat to fix.
+    """
+    black_wrapper(False)
+
+
+@task
+def autoformat(ctx):
+    """ Automatically format the code (using black).
+    """
+    black_wrapper(True)
+
+
+def black_wrapper(writeback):
+    """ Helper function to invoke black programatically.
+    """
+
+    check = [] if writeback else ["--check"]
+    exclude = "|".join(["cangivefilenameshere"])
+    sys.argv[1:] = check + ["--exclude", exclude, ROOT_DIR]
+
+    import black
+
+    black.main()
+
+
+@task
+def clean(ctx):
+    """ Clean the repo of temp files etc.
+    """
+    for root, dirs, files in os.walk(ROOT_DIR):
+        for dname in dirs:
+            if dname in (
+                "__pycache__",
+                ".cache",
+                "htmlcov",
+                ".hypothesis",
+                ".pytest_cache",
+                "dist",
+                "build",
+                LIBNAME + ".egg-info",
+            ):
+                shutil.rmtree(os.path.join(root, dname))
+                print("Removing", dname)
+        for fname in files:
+            if fname.endswith((".pyc", ".pyo")) or fname in (".coverage"):
+                os.remove(os.path.join(root, fname))
+                print("Removing", fname)
+
+
+DOC_DIR = os.path.join(ROOT_DIR, "docs")
+DOC_BUILD_DIR = os.path.join(ROOT_DIR, "docs", "_build")
 
 
 @task(
