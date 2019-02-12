@@ -23,4 +23,4 @@ async def main(request):
 
 
 if __name__ == "__main__":
-    asgish.run(main, "uvicorn", "localhost:8080")
+    asgish.run(main, "uvicorn", "0.0.0.0:8080")
