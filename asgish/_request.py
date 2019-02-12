@@ -60,10 +60,11 @@ class BaseRequest:
 
     @property
     def host(self):
-        """ The server's host name (string).
+        """ he requested host name, taken from the Host header,
+        or ``scope['server'][0]`` if there is not Host header.
         See also ``scope['server']`` and ``scope['client']``.
         """
-        return self._scope["server"][0]
+        return self.headers.get("host", self._scope["server"][0]).split(":")[0]
 
     @property
     def port(self):
