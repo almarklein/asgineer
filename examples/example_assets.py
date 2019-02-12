@@ -1,7 +1,7 @@
 """
 This might well be the fastest way to host a static website, because:
 
-* Uvicorn (with uvloop) is lighning fast.
+* Uvicorn (with uvloop and httptools) is lighning fast.
 * Asgish is just a minimal layer on top.
 * The ``make_asset_handler()`` takes care of HTTP caching and compression.
 
@@ -19,7 +19,7 @@ assets = {
 }
 
 
-# Create a handler to server them
+# Create a handler to server the dicts of assets
 asset_handler = asgish.utils.make_asset_handler(assets)
 
 
