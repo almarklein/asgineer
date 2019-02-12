@@ -77,6 +77,7 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
         assert request.method in ("GET", "HEAD")
         if path is None:
             path = request.path.lstrip("/")
+        path = path.lower()
 
         # Exit early on 404
         if path not in assets:
