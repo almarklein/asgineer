@@ -34,8 +34,10 @@ class BaseRequest:
 
     @property
     def headers(self):
-        """ A dictionary representing the headers. Both keys and values are strings.
+        """ A dictionary representing the headers. Both keys and values are
+        lowercase strings.
         """
+        # We can assume the headers to be made lowercase by h11/httptools/etc. right?
         if self._headers is None:
             self._headers = dict(
                 (key.decode(), val.decode()) for key, val in self._scope["headers"]
