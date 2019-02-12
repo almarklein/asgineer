@@ -56,11 +56,13 @@ needs an ASGI server to run on, like
 
 ## Development
 
-Extra dev dependencies: `pip install pytest pytest-cov black pyflakes requests websockets`
+Extra dev dependencies: `pip install invoke pytest pytest-cov black flake8 requests websockets`
 
-* Use `black .` to apply Black code formatting.
-* Run `pyflakes .` to test for unused imports and more.
-* Run `pytest tests` to run the tests, optionally set the `ASGI_SERVER` environment variable.
+Run `invoke -l` to get a list of dev commands, e.g.:
+    
+* `invoke autoformat` to apply Black code formatting.
+* `invoke lint` to test for unused imports and more.
+* `invoke tests` to run the tests, optionally set the `ASGI_SERVER` environment variable.
 
 
 ## License
