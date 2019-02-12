@@ -34,8 +34,7 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
     * ``max_age (int)``: The maximum age of the assets. This is used as a hint
       for the client (e.g. the browser) for how long an asset is "fresh"
       and can be used before validating it. The default is zero. Can be
-      set higher for assets that hardly ever change (e.g. images). Note
-      that some browsers top this value at 36000 (10 minutes).
+      set higher for assets that hardly ever change (e.g. images and fonts).
     * ``min_zip_size (int)``: The minimum size of the body for zipping an
       asset. Note that responses are only zipped if the request indicates that
       the client can deal with zipped data.
@@ -49,16 +48,30 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
     assets = dict((key.lower(), val) for (key, val) in assets.items())
     hashes = {}
     zipped = {}
+    ctypes = {}
     for key, val in assets.items():
+        # Get binary body
         if isinstance(val, bytes):
             bbody = val
         elif isinstance(val, str):
             bbody = val.encode()
         else:
             raise ValueError("Asset bodies must be str or bytes.")
+        # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
+        # Store zipped version if above limit
         if len(bbody) >= min_zip_size:
             zipped[key] = gzip.compress(bbody)
+        # Store mimetype
+        ctype, enc = mimetypes.guess_type(key)
+        if ctype:
+            ctypes[key] = ctype
+        elif isinstance(val, bytes):
+            ctypes[key] = "application/octet-stream"
+        elif val.startswith(("<!DOCTYPE html>", "<html>")):
+            ctypes[key] = "text/html"
+        else:
+            ctypes[key] = "text/plain"
 
     async def asset_handler(request, path=None):
         assert request.method in ("GET", "HEAD")
@@ -81,9 +94,7 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
             return 304, headers, b""
 
         # Set content type
-        ctype, enc = mimetypes.guess_type(path)
-        if ctype:
-            headers["content-type"] = ctype
+        headers["content-type"] = ctypes[path]
 
         # Get body, zip if we should and can
         if path in zipped and "gzip" in request.headers.get("accept-encoding", ""):
