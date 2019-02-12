@@ -20,6 +20,7 @@ def test_make_asset_handler():
 
     # Make a server
     assets = {"foo.html": "bla", "foo.png": b"x" * 10000}
+    assets.update({"b.xx": b"x", "t.xx": "x", "h.xx": "<html>x</html>"})
     handler = asgish.utils.make_asset_handler(assets)
     server = make_server(asgish.to_asgi(handler))
 
@@ -34,6 +35,10 @@ def test_make_asset_handler():
 
     assert r1.headers["content-type"] == "text/html"
     assert r2.headers["content-type"] == "image/png"
+
+    assert server.get("h.xx").headers["content-type"] == "text/html"
+    assert server.get("t.xx").headers["content-type"] == "text/plain"
+    assert server.get("b.xx").headers["content-type"] == "application/octet-stream"
 
     assert r1.headers["etag"]
     assert r2.headers["etag"]
