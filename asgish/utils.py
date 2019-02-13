@@ -12,32 +12,58 @@ from ._app import normalize_response
 __all__ = ["normalize_response", "make_asset_handler"]
 
 
-def make_asset_handler(assets, max_age=0, min_zip_size=500):
+def make_asset_handler(assets, max_age=0, min_compress_size=256):
     """
-    Get a coroutine function that can be used to serve the given assets.
-    It's signature is ``asset_handler(request, path=None)``. If path is not
-    given or None, ``request.path.lstrip("/")`` is used.
+    Get a coroutine function for efficiently serving in-memory assets.
+    The resulting handler functon takes care of setting the appropriate
+    content-type header, sending compressed responses when possible, and
+    applying appropriate HTTP caching (using etag and cache-control headers).
+    Usage:
     
-    This function takes care of sending compressed responses, and
-    applying appropriate HTTP caching. The ETag header is used so that
-    clients can validate the asset, and the handler will send back only
-    a small confirmation if the asset has not changed. This makes is
-    easy to create a reliable and fast asset handler. It may, however,
-    be less suited for large data, since all assets are stored
-    in-memory.
+    .. code-block:: python
     
-    Parameters:
+        assets = ... # a dict mapping filenames to asset bodies (str/bytes)
+        
+        asset_handler = make_asset_handler(assets)
+        
+        async def some_handler(request):
+            path = request.path.lstrip("/")
+            return await asset_handler(request, path)
     
-    * ``assets (dict)``: The assets to server. The keys must be str (this
-      function takes care of making it case insensitive). The values must be
-      bytes or str.
+    
+    Parameters for ``make_asset_handler()``:
+    
+    * ``assets (dict)``: The assets to serve. The keys represent "file names"
+      and must be str. The values must be bytes or str.
     * ``max_age (int)``: The maximum age of the assets. This is used as a hint
       for the client (e.g. the browser) for how long an asset is "fresh"
       and can be used before validating it. The default is zero. Can be
       set higher for assets that hardly ever change (e.g. images and fonts).
-    * ``min_zip_size (int)``: The minimum size of the body for zipping an
-      asset. Note that responses are only zipped if the request indicates that
-      the client can deal with zipped data.
+    * ``min_compress_size (int)``: The minimum size of the body for compressing
+      an asset. Default 256.
+    
+    Parameters for the handler:
+    
+    * ``request (Request)``: The Asgish request object (for the request headers).
+    * ``path (str)``: A key in the asset dictionary. Case insensitive.
+      If not given or None, ``request.path.lstrip("/")`` is used.
+    
+    Handler behavior:
+    
+    * If the given path is not present in the asset dict (case insensitive),
+      a 404-not-found response is returned.
+    * The ``etag`` header is set to a (sha256) hash of the body of the asset.
+    * The ``cache-control`` header is set to "public must-revalidate max-age=xx".
+    * If the request has a ``if-none-match`` header that matches the etag,
+      the handler responds with 304 (indicating to the client that the resource
+      is still up-to-date).
+    * Otherwise, the asset body is returned, setting the ``content-type`` header
+      based on the filename extensions of the keys in the asset dicts. If the
+      key does not contain a dot, the ``content-type`` will be based on the
+      body of the asset.
+    * If the asset is over ``min_compress_size`` bytes, and the request
+      has a ``accept-encoding`` header that contains "gzip", the data
+      is send in compressed form.
     """
 
     if not isinstance(assets, dict):
@@ -60,7 +86,7 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
         # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
         # Store zipped version if above limit
-        if len(bbody) >= min_zip_size:
+        if len(bbody) >= min_compress_size:
             zipped[key] = gzip.compress(bbody)
         # Store mimetype
         ctype, enc = mimetypes.guess_type(key)
@@ -68,10 +94,8 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
             ctypes[key] = ctype
         elif isinstance(val, bytes):
             ctypes[key] = "application/octet-stream"
-        elif val.startswith(("<!DOCTYPE html>", "<html>")):
-            ctypes[key] = "text/html"
         else:
-            ctypes[key] = "text/plain"
+            pass  # str bodies get a content-type from Asgish core.
 
     async def asset_handler(request, path=None):
         assert request.method in ("GET", "HEAD")
@@ -81,7 +105,7 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
 
         # Exit early on 404
         if path not in assets:
-            return 404, {}, b""
+            return 404, {}, "404 not found"
 
         content_etag = hashes.get(path, None)
         request_etag = request.headers.get("if-none-match", None)
@@ -95,7 +119,8 @@ def make_asset_handler(assets, max_age=0, min_zip_size=500):
             return 304, headers, b""
 
         # Set content type
-        headers["content-type"] = ctypes[path]
+        if path in ctypes:
+            headers["content-type"] = ctypes[path]
 
         # Get body, zip if we should and can
         if path in zipped and "gzip" in request.headers.get("accept-encoding", ""):
