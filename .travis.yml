@@ -1,4 +1,4 @@
-# Travis CI configuration file for asgish
+# Travis CI configuration file for asgineer
 # Validate this at http://lint.travis-ci.org/
 
 language: python
@@ -60,7 +60,7 @@ script:
         sphinx-build docs docs/_build;
       else
         cd tests;
-        PYTHONPATH=${SRC_DIR} pytest -v --cov=asgish --cov-report=term-missing .;
+        PYTHONPATH=${SRC_DIR} pytest -v --cov=asgineer --cov-report=term-missing .;
       fi;
 
 after_success:

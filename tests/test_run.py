@@ -2,7 +2,7 @@
 Test some specifics of the run function.
 """
 
-import asgish
+import asgineer
 import pytest
 
 
@@ -13,15 +13,15 @@ async def handler(request):
 def test_run():
 
     with pytest.raises(ValueError) as err:
-        asgish.run("foo", "nonexistingserver")
+        asgineer.run("foo", "nonexistingserver")
     assert "full path" in str(err).lower()
 
     with pytest.raises(ValueError) as err:
-        asgish.run("foo:bar", "nonexistingserver")
+        asgineer.run("foo:bar", "nonexistingserver")
     assert "invalid server" in str(err).lower()
 
     with pytest.raises(ValueError) as err:
-        asgish.run(handler, "nonexistingserver")
+        asgineer.run(handler, "nonexistingserver")
     assert "invalid server" in str(err).lower()
 
 

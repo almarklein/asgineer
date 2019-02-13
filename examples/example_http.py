@@ -1,10 +1,10 @@
 """
-Example web app written in Asgish. We have one main handler, which may
+Example web app written in Asgineer. We have one main handler, which may
 delegate the request to one of the other handlers, which demonstrate a
 few different ways to send an http response.
 """
 
-import asgish
+import asgineer
 
 index = """
 <!DOCTYPE html>
@@ -23,11 +23,11 @@ index = """
 """.lstrip()
 
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def main(request):
 
     if not request.path.rstrip("/"):
-        return index  # Asgish sets the text/html content type
+        return index  # Asgineer sets the text/html content type
     elif request.path.endswith(".bin"):
         return await bytes_handler(request)
     elif request.path.endswith(".txt"):
@@ -126,5 +126,5 @@ async def chunks(request):
 
 
 if __name__ == "__main__":
-    # asgish.run(main, "hypercorn", "localhost:8080", workers=3)
-    asgish.run(main, "uvicorn", "localhost:8080")
+    # asgineer.run(main, "hypercorn", "localhost:8080", workers=3)
+    asgineer.run(main, "uvicorn", "localhost:8080")

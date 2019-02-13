@@ -1,21 +1,21 @@
-# Asgish
+# Asgineer
 A really thin ASGI web framework 🐍🤘
 
-[![Build Status](https://api.travis-ci.org/almarklein/asgish.svg)](https://travis-ci.org/almarklein/asgish)
-[![Documentation Status](https://readthedocs.org/projects/asgish/badge/?version=latest)](https://asgish.readthedocs.io/?badge=latest)
-[![Package Version](https://badge.fury.io/py/asgish.svg)](https://pypi.org/project/asgish)
+[![Build Status](https://api.travis-ci.org/almarklein/asgineer.svg)](https://travis-ci.org/almarklein/asgineer)
+[![Documentation Status](https://readthedocs.org/projects/asgineer/badge/?version=latest)](https://asgineer.readthedocs.io/?badge=latest)
+[![Package Version](https://badge.fury.io/py/asgineer.svg)](https://pypi.org/project/asgineer)
     
 
 ## Introduction
 
-[Asgish](https://asgish.readthedocs.io) is a tool to write asynchronous
+[Asgineer](https://asgineer.readthedocs.io) is a tool to write asynchronous
 web applications, using as few abstractions as possible, while still
 offering a friendly API. The
-[guide](https://asgish.readthedocs.io/guide.html) and
-[reference](https://asgish.readthedocs.io/reference.html) take just a few
+[guide](https://asgineer.readthedocs.io/guide.html) and
+[reference](https://asgineer.readthedocs.io/reference.html) take just a few
 minutes to read!
 
-When running Asgish on [Uvicorn](https://github.com/encode/uvicorn),
+When running Asgineer on [Uvicorn](https://github.com/encode/uvicorn),
 it is one of the fastest web frameworks available.
 
 
@@ -24,14 +24,14 @@ it is one of the fastest web frameworks available.
 ```py
 # example.py
 
-import asgish
+import asgineer
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def main(request):
     return f"<html>You requested <b>{request.path}</b></html>"
 
 if __name__ == '__main__':
-    asgish.run(main, 'uvicorn', 'localhost:8080')
+    asgineer.run(main, 'uvicorn', 'localhost:8080')
 ```
 
 You can start the server by running this script, or start it the *ASGI way*, e.g.
@@ -42,12 +42,12 @@ $ uvicorn example:main --host=localhost --port=8080
 
 ## Installation and dependencies
 
-Asgish needs Python 3.6 or higher. To install or upgrade, run:
+Asgineer needs Python 3.6 or higher. To install or upgrade, run:
 ```
-$ pip install asgish --upgrade
+$ pip install asgineer --upgrade
 ```
 
-Asgish has zero hard dependencies, but it
+Asgineer has zero hard dependencies, but it
 needs an ASGI server to run on, like
 [Uvicorn](https://github.com/encode/uvicorn),
 [Hypercorn](https://gitlab.com/pgjones/hypercorn), or

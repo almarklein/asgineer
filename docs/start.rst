@@ -6,17 +6,17 @@ Getting started
 Installation
 ============
 
-Asgish need Python 3.6 or higher. To install or upgrade, run:
+Asgineer need Python 3.6 or higher. To install or upgrade, run:
 
 .. code-block:: shell
     
-    $ pip install asgish --upgrade
+    $ pip install asgineer --upgrade
 
 
 Dependencies
 ============
 
-Asgish does not directly depend on any other libraries, but it
+Asgineer does not directly depend on any other libraries, but it
 does need an ASGI erver to run on. You need to install one
 of these seperately:
 

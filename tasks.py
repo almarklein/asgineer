@@ -11,15 +11,15 @@ from invoke import task
 
 # ---------- Per project config ----------
 
-NAME = "asgish"
+NAME = "asgineer"
 LIBNAME = NAME.replace("-", "_")
 PY_PATHS = [LIBNAME, "tests", "tasks.py", "setup.py"]  # for linting/formatting
 
 # ----------------------------------------
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
-    sys.exit("package NAME seems to be incorrect.")
+# if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
+#     sys.exit("package NAME seems to be incorrect.")
 
 
 @task
@@ -31,7 +31,7 @@ def tests(ctx, server="mock", cover=False):
     test_path = "tests"
     os.environ["ASGI_SERVER"] = server
     res = pytest.main(
-        ["-v", "--cov=asgish", "--cov-report=term", "--cov-report=html", test_path]
+        ["-v", "--cov=asgineer", "--cov-report=term", "--cov-report=html", test_path]
     )
     if res:
         sys.exit(res)
@@ -101,6 +101,8 @@ def clean(ctx):
                 ".pytest_cache",
                 "dist",
                 "build",
+                "_build",
+                ".mypy_cache",
                 LIBNAME + ".egg-info",
             ):
                 shutil.rmtree(os.path.join(root, dname))

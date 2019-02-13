@@ -1,16 +1,16 @@
 """
-Demonstrate the use of Starlette middleware to Asgish handlers.
+Demonstrate the use of Starlette middleware to Asgineer handlers.
 
-Because Asgish produces an ASGI-compatible application class, we can
+Because Asgineer produces an ASGI-compatible application class, we can
 wrap it with ASGI middleware, e.g. from Starlette. Hooray for standards!
 """
 
-import asgish
+import asgineer
 
 from starlette.middleware.gzip import GZipMiddleware
 
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def main(req):
     return "hello world " * 1000
 
@@ -20,4 +20,4 @@ main = GZipMiddleware(main, minimum_size=1024)
 
 
 if __name__ == "__main__":
-    asgish.run(f"__main__:main", "uvicorn")
+    asgineer.run(f"__main__:main", "uvicorn")

@@ -1,4 +1,4 @@
-import asgish.utils
+import asgineer.utils
 
 from common import make_server, get_backend
 
@@ -14,15 +14,15 @@ def test_make_asset_handler():
         skip("Can only test this with mock server")
 
     with raises(TypeError):
-        asgish.utils.make_asset_handler("not a dict")
+        asgineer.utils.make_asset_handler("not a dict")
     with raises(ValueError):
-        asgish.utils.make_asset_handler({"notstrorbytes": 4})
+        asgineer.utils.make_asset_handler({"notstrorbytes": 4})
 
     # Make a server
     assets = {"foo.html": "bla", "foo.png": b"x" * 10000}
     assets.update({"b.xx": b"x", "t.xx": "x", "h.xx": "<html>x</html>"})
-    handler = asgish.utils.make_asset_handler(assets)
-    server = make_server(asgish.to_asgi(handler))
+    handler = asgineer.utils.make_asset_handler(assets)
+    server = make_server(asgineer.to_asgi(handler))
 
     # Do simple requests and check validity
     r0 = server.get("foo")

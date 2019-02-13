@@ -44,7 +44,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     
     Parameters for the handler:
     
-    * ``request (Request)``: The Asgish request object (for the request headers).
+    * ``request (Request)``: The Asgineer request object (for the request headers).
     * ``path (str)``: A key in the asset dictionary. Case insensitive.
       If not given or None, ``request.path.lstrip("/")`` is used.
     
@@ -95,7 +95,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         elif isinstance(val, bytes):
             ctypes[key] = "application/octet-stream"
         else:
-            pass  # str bodies get a content-type from Asgish core.
+            pass  # str bodies get a content-type from Asgineer core.
 
     async def asset_handler(request, path=None):
         assert request.method in ("GET", "HEAD")

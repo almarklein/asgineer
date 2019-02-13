@@ -1,17 +1,17 @@
-================
-Asgish reference
-================
+==================
+Asgineer reference
+==================
 
-This page contains the API documentation of Asgish' functions and classes,
-as well as a description of Asgish more implicit API.
+This page contains the API documentation of Asgineer's functions and classes,
+as well as a description of Asgineer more implicit API.
 
 
 The functions
 =============
 
-.. autofunction:: asgish.to_asgi
+.. autofunction:: asgineer.to_asgi
 
-.. autofunction:: asgish.run
+.. autofunction:: asgineer.run
 
 
 How to return a response
@@ -21,7 +21,7 @@ An HTTP response consists of three things: an integer
 `status code <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_,
 a dictionary of `headers <https://en.wikipedia.org/wiki/List_of_HTTP_header_fields>`_,
 and the response `body <https://en.wikipedia.org/wiki/HTTP_message_body>`_.
-Many web frameworks wrap these up in a response object. In Asgish you
+Many web frameworks wrap these up in a response object. In Asgineer you
 just return them. You can also return just the body, or the body and
 headers; these are all equivalent:
 
@@ -33,7 +33,7 @@ headers; these are all equivalent:
 
 If needed, the :func:`.normalize_response` function can be used to
 turn a response (e.g. of a subhandler) into a 3-element tuple.
-In the end, the body of an HTTP response is always binary, but Asgish
+In the end, the body of an HTTP response is always binary, but Asgineer
 handles some common cases for you:
 
 * A ``bytes`` object is passed unchanged.
@@ -45,7 +45,7 @@ handles some common cases for you:
   and the ``content-type`` header is set to ``application/json``.
 
 Responses can also be send in chunks by returning an async generator (which
-must yield ``bytes`` or ``str`` objects). Asgish will use the generator to stream
+must yield ``bytes`` or ``str`` objects). Asgineer will use the generator to stream
 the body to the client:
 
 .. code-block:: python
@@ -62,30 +62,30 @@ the body to the client:
 The Request classes
 ===================
 
-.. autoclass:: asgish.BaseRequest
+.. autoclass:: asgineer.BaseRequest
     :members:
 
-.. autoclass:: asgish.HttpRequest
+.. autoclass:: asgineer.HttpRequest
     :members:
 
-.. autoclass:: asgish.WebsocketRequest
+.. autoclass:: asgineer.WebsocketRequest
     :members:
 
 
-Details on Asgish' behavior
-===========================
+Details on Asgineer's behavior
+==============================
 
-Asgish will invoke your main handler for each incoming request. If an
+Asgineer will invoke your main handler for each incoming request. If an
 exception is raised inside the handler, this exception will be logged
 (including ``exc_info``) using the logger that can be obtained with
-``logging.getLogger("asgish")``, which by default writes to stderr. A
+``logging.getLogger("asgineer")``, which by default writes to stderr. A
 status 500 (internal server error) response is sent back, and the error
 message (without traceback) is included (if the response has not yet been sent).
 
 Similarly, when the returned response is flawed, a (slightly different)
 error message is logged and included in the response.
 
-In fact, Asgish handles all exceptions, since the ASGI servers log
+In fact, Asgineer handles all exceptions, since the ASGI servers log
 errors in different ways (some just ignore them). If an error does fall
 through, it can be considered a bug.
 
@@ -93,8 +93,8 @@ through, it can be considered a bug.
 Utility functions
 =================
 
-The ``asgish.utils`` module provides a few utilities for common tasks.
+The ``asgineer.utils`` module provides a few utilities for common tasks.
 
-.. autofunction:: asgish.utils.normalize_response
+.. autofunction:: asgineer.utils.normalize_response
 
-.. autofunction:: asgish.utils.make_asset_handler
+.. autofunction:: asgineer.utils.make_asset_handler

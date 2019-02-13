@@ -1,19 +1,19 @@
-============
-Asgish guide
-============
+==============
+Asgineer guide
+==============
 
 
 A first look
 ============
 
-Here's an example web application written with Asgish:
+Here's an example web application written with Asgineer:
 
 .. code-block:: python
 
     # example.py
-    import asgish
+    import asgineer
     
-    @asgish.to_asgi
+    @asgineer.to_asgi
     async def main(request):
         return f"<html>You requested <b>{request.path}</b></html>"
 
@@ -21,14 +21,14 @@ Here's an example web application written with Asgish:
 Running the application
 =======================
 
-Asgish provides a ``run()`` function that is aware of the most common
+Asgineer provides a ``run()`` function that is aware of the most common
 ASGI servers. Just put this at the bottom of the same file to enable
 running the file as a script:
 
 .. code-block:: python
     
     if __name__ == '__main__':  
-        asgish.run('uvicorn', main, 'localhost:8080')
+        asgineer.run('uvicorn', main, 'localhost:8080')
         # or use 'hypercorn', 'daphne', ...
 
 Alternatively, the above example can be run from the command line, using
@@ -47,16 +47,16 @@ any ASGI server:
 Routing
 =======
 
-Asgish takes a "linear" approach to handling request. It avoids magic
+Asgineer takes a "linear" approach to handling request. It avoids magic
 like routing systems, so you can easily follow how requests move through
 your code. To do the routing, make your main handler delegate to
 sub-handlers:
 
 .. code-block:: python
 
-    import asgish
+    import asgineer
     
-    @asgish.to_asgi
+    @asgineer.to_asgi
     async def main(request):
         path = request.path
         if path == '/':
@@ -80,7 +80,7 @@ sub-handlers:
         path = request.path.split('/api/')[-1]
         return {'path', path}
 
-For the common task of serving assets, Asgish provides an easy way to this
+For the common task of serving assets, Asgineer provides an easy way to this
 correct and fast, with :func:`.make_asset_handler`.
 
 Websockets
