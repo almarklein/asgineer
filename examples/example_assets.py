@@ -2,12 +2,12 @@
 This might well be the fastest way to host a static website, because:
 
 * Uvicorn (with uvloop and httptools) is lighning fast.
-* Asgish is just a minimal layer on top.
+* asgineer is just a minimal layer on top.
 * The ``make_asset_handler()`` takes care of HTTP caching and compression.
 
 """
 
-import asgish
+import asgineer
 
 
 # Define a dictionary of assets. Change this to e.g. load them from the
@@ -20,14 +20,14 @@ assets = {
 
 
 # Create a handler to server the dicts of assets
-asset_handler = asgish.utils.make_asset_handler(assets)
+asset_handler = asgineer.utils.make_asset_handler(assets)
 
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def main(request):
     path = request.path.lstrip("/") or "index.html"
     return await asset_handler(request, path)
 
 
 if __name__ == "__main__":
-    asgish.run(main, "uvicorn", "localhost:8080")
+    asgineer.run(main, "uvicorn", "localhost:8080")

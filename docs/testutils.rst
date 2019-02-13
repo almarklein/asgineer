@@ -1,9 +1,9 @@
-=====================
-Asgish test utilities
-=====================
+=======================
+Asgineer test utilities
+=======================
 
-When you've writting a fancy web application with Asgish, you might want to
-write some unit tests. The ``asgish.testutils`` module provides some utilities
+When you've writting a fancy web application with Asgineer, you might want to
+write some unit tests. The ``asgineer.testutils`` module provides some utilities
 to help do that. It requires the ``requests`` library, and the ``websockets``
 library when using websockets.
 
@@ -16,7 +16,7 @@ Testing example
 
     import json
     
-    from asgish.testutils import ProcessTestServer, MockTestServer
+    from asgineer.testutils import ProcessTestServer, MockTestServer
     
     
     # ----- Define handlers - you'd probably import these instead
@@ -65,11 +65,11 @@ running in a subprocess. The API is exactly the same though!
 Test server classes
 ===================
 
-.. autoclass:: asgish.testutils.BaseTestServer
+.. autoclass:: asgineer.testutils.BaseTestServer
     :members:
 
-.. autoclass:: asgish.testutils.ProcessTestServer
+.. autoclass:: asgineer.testutils.ProcessTestServer
     :members:
 
-.. autoclass:: asgish.testutils.MockTestServer
+.. autoclass:: asgineer.testutils.MockTestServer
     :members:

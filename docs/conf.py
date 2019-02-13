@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Asgish documentation build configuration file, created by
+# Asgineer documentation build configuration file, created by
 # sphinx-quickstart on Wed Sep 26 15:13:51 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import asgish
+import asgineer
 
 # -- General configuration ------------------------------------------------
 
@@ -25,14 +25,14 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "Asgish"
-copyright = "2018, Almar Klein"
+project = "Asgineer"
+copyright = "2018-2019, Almar Klein"
 author = "Almar Klein"
 
 # The short X.Y version.
-version = ".".join(asgish.__version__.split(".")[:2])
+version = ".".join(asgineer.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
-release = asgish.__version__
+release = asgineer.__version__
 
 language = None
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]

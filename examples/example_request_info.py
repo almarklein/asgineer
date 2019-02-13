@@ -1,11 +1,11 @@
 """
-Simple Asgish hanler to show information about the incoming request.
+Simple Asgineer hanler to show information about the incoming request.
 """
 
-import asgish
+import asgineer
 
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def main(request):
 
     lines = [
@@ -23,4 +23,4 @@ async def main(request):
 
 
 if __name__ == "__main__":
-    asgish.run(main, "uvicorn", "0.0.0.0:8080")
+    asgineer.run(main, "uvicorn", "0.0.0.0:8080")

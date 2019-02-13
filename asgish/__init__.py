@@ -1,5 +1,5 @@
 """
-Asgish - A really thin ASGI web framework
+Asgineer - A really thin ASGI web framework
 """
 
 from ._request import BaseRequest, HttpRequest, WebsocketRequest

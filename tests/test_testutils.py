@@ -3,8 +3,8 @@ Test testutils code. Note that most other tests implicitly test it.
 """
 
 from common import make_server
-from asgish.testutils import MockTestServer
-import asgish
+from asgineer.testutils import MockTestServer
+import asgineer
 
 
 async def handler1(request):
@@ -15,10 +15,10 @@ async def handler2(request):
     return await handler1(request)
 
 
-app1 = asgish.to_asgi(handler1)
+app1 = asgineer.to_asgi(handler1)
 
 
-@asgish.to_asgi
+@asgineer.to_asgi
 async def app2(request):
     return "hellow2"
 
@@ -30,7 +30,7 @@ def test_http():
     async def handler4(request):
         return await handler1(request)
 
-    app3 = asgish.to_asgi(handler3)
+    app3 = asgineer.to_asgi(handler3)
     app3
 
     with make_server(handler1) as p:
@@ -68,7 +68,7 @@ def test_http_mock():
     async def handler4(request):
         return await handler1(request)
 
-    app3 = asgish.to_asgi(handler3)
+    app3 = asgineer.to_asgi(handler3)
 
     with MockTestServer(handler1) as p:
         assert p.get("").body == b"hellow1"

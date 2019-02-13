@@ -5,7 +5,7 @@ Test some specifics of the App class.
 import logging
 import asyncio
 
-import asgish
+import asgineer
 
 
 class LogCapturer(logging.Handler):
@@ -17,12 +17,12 @@ class LogCapturer(logging.Handler):
         self.messages.append(record.msg)
 
     def __enter__(self):
-        logger = logging.getLogger("asgish")
+        logger = logging.getLogger("asgineer")
         logger.addHandler(self)
         return self
 
     def __exit__(self, *args, **kwargs):
-        logger = logging.getLogger("asgish")
+        logger = logging.getLogger("asgineer")
         logger.removeHandler(self)
 
 
@@ -34,7 +34,7 @@ def test_invalid_scope_types():
 
     # All scope valid scope types are tested in other tests. Only test invalid here.
 
-    app = asgish.to_asgi(handler)
+    app = asgineer.to_asgi(handler)
 
     scope = {"type": "notaknownscope"}
     loop = asyncio.get_event_loop()
@@ -48,7 +48,7 @@ def test_invalid_scope_types():
 
 def test_lifespan():
 
-    app = asgish.to_asgi(handler)
+    app = asgineer.to_asgi(handler)
 
     scope = {"type": "lifespan"}
     loop = asyncio.get_event_loop()

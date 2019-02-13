@@ -11,7 +11,7 @@ from ._request import HttpRequest, WebsocketRequest
 
 
 # Initialize the logger
-logger = logging.getLogger("asgish")
+logger = logging.getLogger("asgineer")
 logger.propagate = False
 logger.setLevel(logging.INFO)
 _handler = logging.StreamHandler(sys.stderr)
@@ -31,7 +31,7 @@ def to_asgi(handler):
 
     if not inspect.iscoroutinefunction(handler):
         raise TypeError(
-            "asgish.to_asgi() handler function must be a coroutine function."
+            "asgineer.to_asgi() handler function must be a coroutine function."
         )
 
     class Application(BaseApplication):

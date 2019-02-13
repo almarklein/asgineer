@@ -5,7 +5,7 @@ Common utilities used in our test scripts.
 import os
 import sys
 
-from asgish.testutils import ProcessTestServer, MockTestServer
+from asgineer.testutils import ProcessTestServer, MockTestServer
 
 
 def get_backend():

@@ -3,13 +3,13 @@ Test some meta stuff.
 """
 
 import os
-import asgish
+import asgineer
 
 
 def test_namespace():
-    assert asgish.__version__
+    assert asgineer.__version__
 
-    ns = set(name for name in dir(asgish) if not name.startswith("_"))
+    ns = set(name for name in dir(asgineer) if not name.startswith("_"))
 
     ns.discard("testutils")  # may or may not be imported
 
@@ -22,7 +22,7 @@ def test_namespace():
         "run",
         "utils",
     }
-    assert ns == set(asgish.__all__)
+    assert ns == set(asgineer.__all__)
 
 
 def test_newlines():

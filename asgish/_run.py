@@ -5,7 +5,7 @@ This module implements a ``run()`` function to start an ASGI server of choice.
 
 def run(app, server, bind="localhost:8080", **kwargs):
     """ Run the given ASGI app with the given ASGI server. (This works for
-    any ASGI app, not just Asgish apps.) This provides a generic programatic
+    any ASGI app, not just Asgineer apps.) This provides a generic programatic
     API as an alternative to the standard ASGI-way to start a server.
     
     Arguments:
@@ -24,9 +24,9 @@ def run(app, server, bind="localhost:8080", **kwargs):
         appname = app.__module__ + ":" + app.__name__
 
     # Check server and bind
-    assert isinstance(server, str), "asgish.run() server arg must be a string."
-    assert isinstance(bind, str), "asgish.run() bind arg must be a string."
-    assert ":" in bind, "asgish.run() bind arg must be 'host:port'"
+    assert isinstance(server, str), "asgineer.run() server arg must be a string."
+    assert isinstance(bind, str), "asgineer.run() bind arg must be a string."
+    assert ":" in bind, "asgineer.run() bind arg must be 'host:port'"
     bind = bind.replace("localhost", "127.0.0.1")
 
     # Select server function

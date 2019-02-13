@@ -5,7 +5,7 @@ Test behavior for HTTP request handlers.
 import json
 
 import pytest
-import asgish
+import asgineer
 
 from common import get_backend, make_server
 
@@ -548,10 +548,10 @@ async def handler_wrong_use2(request):
 def test_wrong_use():
 
     with pytest.raises(TypeError):
-        asgish.to_asgi(handler_wrong_use1)
+        asgineer.to_asgi(handler_wrong_use1)
 
     with pytest.raises(TypeError):
-        asgish.to_asgi(handler_wrong_use2)
+        asgineer.to_asgi(handler_wrong_use2)
 
 
 ##

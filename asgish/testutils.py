@@ -1,5 +1,5 @@
 """
-Asgish test utilities.
+Asgineer test utilities.
 """
 
 import os
@@ -15,13 +15,13 @@ from urllib.parse import unquote, urlparse
 
 import requests
 
-import asgish
+import asgineer
 
 
 Response = namedtuple("Response", ["status", "headers", "body"])
 
 testfilename = os.path.join(
-    tempfile.gettempdir(), f"asgish_test_script_{os.getpid()}.py"
+    tempfile.gettempdir(), f"asgineer_test_script_{os.getpid()}.py"
 )
 
 PORT = 49152 + os.getpid() % 16383  # hash pid to ephimeral port number
@@ -35,7 +35,7 @@ class BaseTestServer:
     server instance that can be used to test your server implementation.
     
     The ``app`` object passed to the constructor can be an ASGI application
-    or an async (Asgish-style) handler.
+    or an async (Asgineer-style) handler.
     
     The server can be started/stopped by using it as a context manager.
     The ``url`` attribute represents the url that can be used to make
@@ -172,7 +172,7 @@ import time
 import threading
 import _thread
 
-import asgish
+import asgineer
 
 def closer():
     while os.path.isfile(__file__):
@@ -193,7 +193,7 @@ def proxy_app(scope):
 
 if __name__ == "__main__":
     threading.Thread(target=closer).start()
-    asgish.run("__main__:proxy_app", "ASGISERVER", "localhost:PORT")
+    asgineer.run("__main__:proxy_app", "ASGISERVER", "localhost:PORT")
     sys.stderr.flush()
     sys.stdout.flush()
     sys.exit(0)
@@ -215,7 +215,7 @@ def load_module(name, filename):
 class ProcessTestServer(BaseTestServer):
     """ Subclass of BaseTestServer that runs an actual server in a
     subprocess. The ``server`` argument must be a server supported by
-    Asgish' ``run()`` function, like "uvicorn", "hypercorn" or "daphne".
+    Asgineer' ``run()`` function, like "uvicorn", "hypercorn" or "daphne".
     
     This provides a very realistic approach to test server applicationes, though
     the overhead of starting and stopping the server costs about a second,
@@ -254,7 +254,7 @@ class ProcessTestServer(BaseTestServer):
             code = code.replace("def " + app.__name__, f"def {name2}")
 
         if is_handler:
-            code += f"\napp = asgish.to_asgi({name2})"
+            code += f"\napp = asgineer.to_asgi({name2})"
         return code
 
     def _start_server(self):
@@ -345,7 +345,7 @@ class MockTestServer(BaseTestServer):
         super().__init__(app, "mock", **kwargs)
 
         if inspect.iscoroutinefunction(app):
-            self._asgi_app = asgish.to_asgi(app)
+            self._asgi_app = asgineer.to_asgi(app)
         else:
             self._asgi_app = app
 
@@ -496,7 +496,7 @@ class MockTestServer(BaseTestServer):
             if m["type"] == "http.response.start":
                 headers = dict((h[0].decode(), h[1].decode()) for h in m["headers"])
                 headers.setdefault("date", format_date_time(time.time()))
-                headers.setdefault("server", "asgish_mock_server")
+                headers.setdefault("server", "asgineer_mock_server")
                 response.extend([m["status"], headers])
             elif m["type"] == "http.response.body":
                 server_to_client.append(m["body"])

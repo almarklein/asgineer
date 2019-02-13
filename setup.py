@@ -1,5 +1,5 @@
 """
-asgish setup script.
+asgineer setup script.
 """
 
 import os
@@ -41,11 +41,11 @@ def get_version_and_doc(filename):
 THIS_DIR = os.path.dirname(__file__)
 
 # Define name and description
-name = "asgish"
+name = "asgineer"
 description = "A really thin ASGI web framework"
 
 # Get version and docstring (i.e. long description)
-version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgish", "__init__.py"))
+version, doc = get_version_and_doc(os.path.join(THIS_DIR, "asgineer", "__init__.py"))
 
 
 ## Setup
@@ -56,8 +56,8 @@ setup(
     author="Almar Klein",
     author_email="almar.klein@gmail.com",
     license="(new) BSD",
-    url="https://github.com/almarklein/asgish",
-    download_url="https://pypi.org/project/asgish/",
+    url="https://github.com/almarklein/asgineer",
+    download_url="https://pypi.org/project/asgineer/",
     keywords="ASGI web framework",
     description=description,
     long_description=doc,
@@ -65,7 +65,7 @@ setup(
     provides=[name],
     python_requires=">=3.6",
     install_requires=[],
-    packages=["asgish"],
+    packages=["asgineer"],
     # entry_points={'console_scripts': ['asgi = asgi:cli'], },
     zip_safe=True,
     classifiers=[
