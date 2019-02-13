@@ -11,8 +11,8 @@ web applications, using as few abstractions as possible, while still
 offering a friendly API. There is no fancy routing; you write an async
 request handler, and delegate to other handlers as needed.
 
-More precisely, Asgineer is a Python ASGI web microframework. And it's so thin
-that it still feels a bit ASGI-ish ...
+More precisely, Asgineer is a (thin) Python ASGI web microframework.
+
 
 Cool stuff:
 

@@ -15,7 +15,7 @@ a framework (like Asgineer, Quart, Starlette, etc.) based on how you want to wri
 your code, and you select a server (like Uvicorn, Hypercorn, Daphne) based on how
 fast/reliable/secure you want it to be.
 
-ASGI is Like WSGI, but for async.
+ASGI is like WSGI, but for async.
 
 In particular, the main part of an ASGI application looks something like this:
     
@@ -30,16 +30,12 @@ In particular, the main part of an ASGI application looks something like this:
             ...
 
 
-How does Asgineer relate
-========================
+Asgineer and other ASGI frameworks
+==================================
 
 ASGI is great, but writing web apps directly in ASGI format is silly.
 Asgineer is a tiny layer on top. It's so minimal that it still feels a
 bit like ASGI, but nicer.
-
-
-Other ASGI web frameworks
-=========================
 
 Other ASGI frameworks include
 `Starlette <https://github.com/encode/starlette>`_,
