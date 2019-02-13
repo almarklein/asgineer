@@ -11,4 +11,4 @@ from . import utils
 __all__ = ["BaseRequest", "HttpRequest", "WebsocketRequest", "to_asgi", "run", "utils"]
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
