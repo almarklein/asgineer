@@ -167,7 +167,7 @@ class BaseApplication:
 
             # Convert the body
             if isinstance(body, bytes):
-                pass
+                pass  # Make no assumptions about the content-type
             elif isinstance(body, str):
                 if body.startswith(("<!DOCTYPE html>", "<html>")):
                     headers.setdefault("content-type", "text/html")
