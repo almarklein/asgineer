@@ -18,8 +18,8 @@ PY_PATHS = [LIBNAME, "tests", "tasks.py", "setup.py"]  # for linting/formatting
 # ----------------------------------------
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-# if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
-#     sys.exit("package NAME seems to be incorrect.")
+if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
+    sys.exit("package NAME seems to be incorrect.")
 
 
 @task
