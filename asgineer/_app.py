@@ -73,7 +73,7 @@ def normalize_response(response):
 def guess_content_type_from_body(body):
     """ Guess the content-type based of the body.
     
-    * "text/html" for str bodies that start with "<!DOCTYPE html>" or "<html>".
+    * "text/html" for str bodies starting with ``<!DOCTYPE html>`` or ``<html>``.
     * "text/plain" for other str bodies.
     * "application/json" for dict bodies.
     * "application/octet-stream" otherwise.
