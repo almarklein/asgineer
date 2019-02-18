@@ -6,10 +6,10 @@ import gzip
 import hashlib
 import mimetypes
 
-from ._app import normalize_response
+from ._app import normalize_response, guess_content_type_from_body
 
 
-__all__ = ["normalize_response", "make_asset_handler"]
+__all__ = ["normalize_response", "make_asset_handler", "guess_content_type_from_body"]
 
 
 def make_asset_handler(assets, max_age=0, min_compress_size=256):
@@ -92,10 +92,8 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         ctype, enc = mimetypes.guess_type(key)
         if ctype:
             ctypes[key] = ctype
-        elif isinstance(val, bytes):
-            ctypes[key] = "application/octet-stream"
         else:
-            pass  # str bodies get a content-type from Asgineer core.
+            ctypes[key] = guess_content_type_from_body(val)
 
     async def asset_handler(request, path=None):
         assert request.method in ("GET", "HEAD")

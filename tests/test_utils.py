@@ -21,6 +21,7 @@ def test_make_asset_handler():
     # Make a server
     assets = {"foo.html": "bla", "foo.png": b"x" * 10000}
     assets.update({"b.xx": b"x", "t.xx": "x", "h.xx": "<html>x</html>"})
+    assets.update({"big.html": "x" * 10000, "bightml": "<html>" + "x" * 100000})
     handler = asgineer.utils.make_asset_handler(assets)
     server = make_server(asgineer.to_asgi(handler))
 
@@ -84,6 +85,20 @@ def test_make_asset_handler():
 
     assert r7.status == 200 and r8.status == 200
     assert len(r1.body) == 3 and len(r2.body) == 10000
+
+    # Big html files will be zipped, but must retain content type
+    for fname in ("big.html", "bightml"):
+        r = server.get(fname)
+        assert r.status == 200
+        assert r.headers.get("content-encoding", "identity") == "identity"
+        assert r.headers["content-type"] == "text/html"
+        plainbody = r.body
+
+        r = server.get(fname, headers={"accept-encoding": "gzip"})
+        assert r.status == 200
+        assert r.headers.get("content-encoding", "identity") == "gzip"
+        assert r.headers["content-type"] == "text/html"
+        assert len(r.body) < len(plainbody)
 
 
 if __name__ == "__main__":
