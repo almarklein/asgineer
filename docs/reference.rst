@@ -95,6 +95,8 @@ Utility functions
 
 The ``asgineer.utils`` module provides a few utilities for common tasks.
 
+.. autofunction:: asgineer.utils.make_asset_handler
+
 .. autofunction:: asgineer.utils.normalize_response
 
-.. autofunction:: asgineer.utils.make_asset_handler
+.. autofunction:: asgineer.utils.guess_content_type_from_body
