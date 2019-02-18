@@ -70,6 +70,25 @@ def normalize_response(response):
     return status, headers, body
 
 
+def guess_content_type_from_body(body):
+    """ Guess the content-type based of the body.
+    
+    * "text/html" for str bodies that start with "<!DOCTYPE html>" or "<html>".
+    * "text/plain" for other str bodies.
+    * "application/json" for dict bodies.
+    * "application/octet-stream" otherwise.
+    """
+    if isinstance(body, str):
+        if body.startswith(("<!DOCTYPE html>", "<!doctype html>", "<html>")):
+            return "text/html"
+        else:
+            return "text/plain"
+    elif isinstance(body, dict):
+        return "application/json"
+    else:
+        return "application/octet-stream"
+
+
 class BaseApplication:
     """ Base ASGI application class.
     """
@@ -165,21 +184,20 @@ class BaseApplication:
 
             status, headers, body = normalize_response(result)
 
+            # Make sure that there is a content type
+            if "content-type" not in headers:
+                headers["content-type"] = guess_content_type_from_body(body)
+
             # Convert the body
             if isinstance(body, bytes):
-                pass  # Make no assumptions about the content-type
+                pass
             elif isinstance(body, str):
-                if body.startswith(("<!DOCTYPE html>", "<html>")):
-                    headers.setdefault("content-type", "text/html")
-                else:
-                    headers.setdefault("content-type", "text/plain")
                 body = body.encode()
             elif isinstance(body, dict):
                 try:
                     body = json.dumps(body).encode()
                 except Exception as err:
                     raise ValueError(f"Could not JSON encode body: {err}")
-                headers.setdefault("content-type", "application/json")
             elif inspect.isasyncgen(body):
                 pass
             else:
