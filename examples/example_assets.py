@@ -20,7 +20,7 @@ assets = {
 
 
 # Create a handler to server the dicts of assets
-asset_handler = asgineer.utils.make_asset_handler(assets)
+asset_handler = asgineer.utils.make_asset_handler(assets, max_age=100)
 
 
 @asgineer.to_asgi

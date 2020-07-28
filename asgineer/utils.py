@@ -11,14 +11,16 @@ from ._app import normalize_response, guess_content_type_from_body
 
 __all__ = ["normalize_response", "make_asset_handler", "guess_content_type_from_body"]
 
+VIDEO_EXTENSIONS = ".mp4", ".3gp", ".webm"
+
 
 def make_asset_handler(assets, max_age=0, min_compress_size=256):
     """
     Get a coroutine function for efficiently serving in-memory assets.
     The resulting handler functon takes care of setting the appropriate
-    content-type header, sending compressed responses when possible, and
-    applying appropriate HTTP caching (using etag and cache-control headers).
-    Usage:
+    content-type header, sending compressed responses when
+    possible/sensible, and applying appropriate HTTP caching (using
+    etag and cache-control headers). Usage:
     
     .. code-block:: python
     
@@ -53,7 +55,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     * If the given path is not present in the asset dict (case insensitive),
       a 404-not-found response is returned.
     * The ``etag`` header is set to a (sha256) hash of the body of the asset.
-    * The ``cache-control`` header is set to "public must-revalidate max-age=xx".
+    * The ``cache-control`` header is set to "public, must-revalidate, max-age=xx".
     * If the request has a ``if-none-match`` header that matches the etag,
       the handler responds with 304 (indicating to the client that the resource
       is still up-to-date).
@@ -61,9 +63,10 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
       based on the filename extensions of the keys in the asset dicts. If the
       key does not contain a dot, the ``content-type`` will be based on the
       body of the asset.
-    * If the asset is over ``min_compress_size`` bytes, and the request
-      has a ``accept-encoding`` header that contains "gzip", the data
-      is send in compressed form.
+    * If the asset is over ``min_compress_size`` bytes, is not a video, the
+      request has a ``accept-encoding`` header that contains "gzip",
+      and the compressed data is less that 90% of the raw data, the
+      data is send in compressed form.
     """
 
     if not isinstance(assets, dict):
@@ -85,9 +88,12 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
             raise ValueError("Asset bodies must be str or bytes.")
         # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
-        # Store zipped version if above limit
+        # Store zipped version if it makes sense
         if len(bbody) >= min_compress_size:
-            zipped[key] = gzip.compress(bbody)
+            if not key.endswith(VIDEO_EXTENSIONS):
+                bbody_zipped = gzip.compress(bbody)
+                if len(bbody_zipped) < 0.90 * len(bbody):
+                    zipped[key] = bbody_zipped
         # Store mimetype
         ctype, enc = mimetypes.guess_type(key)
         if ctype:
@@ -109,7 +115,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         request_etag = request.headers.get("if-none-match", None)
         headers = {
             "etag": content_etag,
-            "cache-control": f"public must-revalidate max-age={max_age:d}",
+            "cache-control": f"public, must-revalidate, max-age={max_age:d}",
         }
 
         # If client already has the exact asset, send confirmation now
@@ -127,6 +133,9 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         else:
             body = assets[path]
 
+        # Note that we always return bytes, not a stream-response. The
+        # assets used with this utility are assumed to be small-ish,
+        # since they are in-memory.
         return 200, headers, body
 
     return asset_handler
