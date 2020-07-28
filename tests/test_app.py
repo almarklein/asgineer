@@ -39,8 +39,7 @@ def test_invalid_scope_types():
     scope = {"type": "notaknownscope"}
     loop = asyncio.get_event_loop()
     with LogCapturer() as cap:
-        app_ob = app(scope)
-        loop.run_until_complete(app_ob(None, None))
+        loop.run_until_complete(app(scope, None, None))
 
     assert len(cap.messages) == 1
     assert "unknown" in cap.messages[0].lower() and "notaknownscope" in cap.messages[0]
@@ -67,8 +66,7 @@ def test_lifespan():
         sent.append(m["type"])
 
     with LogCapturer() as cap:
-        app_ob = app(scope)
-        loop.run_until_complete(app_ob(receive, send))
+        loop.run_until_complete(app(scope, receive, send))
 
     assert sent == ["lifespan.startup.complete", "lifespan.shutdown.complete"]
 

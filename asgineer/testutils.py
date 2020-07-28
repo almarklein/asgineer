@@ -33,15 +33,15 @@ URL = f"http://127.0.0.1:{PORT}"
 class BaseTestServer:
     """ Base class for test servers. Objects of this class represent an ASGI
     server instance that can be used to test your server implementation.
-    
+
     The ``app`` object passed to the constructor can be an ASGI application
     or an async (Asgineer-style) handler.
-    
+
     The server can be started/stopped by using it as a context manager.
     The ``url`` attribute represents the url that can be used to make
     requests to the server. When the server has stopped, The ``out``
     attribute contains the server output (stdout and stderr).
-    
+
     Only one instance of this class (per process) should be used (as a
     context manager) at any given time.
     """
@@ -119,14 +119,14 @@ class BaseTestServer:
 
     def request(self, method, path, data=None, headers=None, **kwargs):
         """ Send a request to the server. Returns a named tuple ``(status, headers, body)``.
-        
+
         Arguments:
             method (str): the HTTP method (e.g. "GET")
             path (str): path or url (also see the ``url`` property).
             data: the bytes to send (optional).
             headers: headers to send (optional).
             kwargs: additional arguments to pass to ``requests.request()``.
-        
+
         """
         assert isinstance(method, str)
         assert isinstance(path, str)
@@ -141,7 +141,7 @@ class BaseTestServer:
 
     def ws_communicate(self, path, client_co_func, loop=None):
         """ Do a websocket request and communicate over the connection.
-        
+
         The ``client_co_func`` object must be an async function, it receives
         a ws object as an argument, which has methods ``send``, ``receive`` and
         ``close``, and it can be iterated over. Messages are either str or bytes.
@@ -181,15 +181,13 @@ def closer():
 
 app = APP
 
-async def stub_responder(receive, send):
-    await send({"type": "http.response.start", "status": 200, "headers": []})
-    await send({"type": "http.response.body", "body": b""})
 
-def proxy_app(scope):
+async def proxy_app(scope, receive, send):
     if scope["path"].startswith("/specialtestpath/"):
-        return stub_responder
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
     else:
-        return app(scope)
+        return await app(scope, receive, send)
 
 if __name__ == "__main__":
     threading.Thread(target=closer).start()
@@ -216,12 +214,12 @@ class ProcessTestServer(BaseTestServer):
     """ Subclass of BaseTestServer that runs an actual server in a
     subprocess. The ``server`` argument must be a server supported by
     Asgineer' ``run()`` function, like "uvicorn", "hypercorn" or "daphne".
-    
+
     This provides a very realistic approach to test server applicationes, though
     the overhead of starting and stopping the server costs about a second,
     and its hard to measure code coverage in this way. Therefore this approach
     is most suited for higher level / integration tests.
-    
+
     Requests can be done via the methods of this object, or using any other
     request library.
     """
@@ -231,16 +229,17 @@ class ProcessTestServer(BaseTestServer):
         self._app_code = self._get_app_code(app)
 
     def _get_app_code(self, app):
+        assert app.__code__.co_argcount in (1, 3)
         mod = inspect.getmodule(app)
         modname = "_main_" if mod.__name__ == "__main__" else mod.__name__
-        is_handler = inspect.iscoroutinefunction(app)
+        is_handler = app.__code__.co_argcount == 1
         name1 = app.__name__
         name2 = "handler" if is_handler else "app"
 
         if getattr(mod, name1, None) is app:
             # We can import the app - safest option since app may have deps
             code = LOAD_MODULE_CODE
-            code += f"sys.path.insert(0, '')\n" + code
+            code += "sys.path.insert(0, '')\n" + code
             if "." not in mod.__name__:
                 code += f"sys.path.insert(0, {os.path.dirname(mod.__file__)!r})\n"
             code += f"{name2} = load_module({modname!r}, {mod.__file__!r}).{name1}"
@@ -336,7 +335,7 @@ class MockTestServer(BaseTestServer):
     operates in-process. This is a less realistic approach, but faster
     and allows tracking test coverage, so it's more suited for unit
     tests.
-    
+
     Requests *must* be done via the methods of this object. The used url
     can be anything.
     """
@@ -344,10 +343,10 @@ class MockTestServer(BaseTestServer):
     def __init__(self, app, **kwargs):
         super().__init__(app, "mock", **kwargs)
 
-        if inspect.iscoroutinefunction(app):
-            self._asgi_app = asgineer.to_asgi(app)
-        else:
+        if app.__code__.co_argcount == 3:
             self._asgi_app = app
+        else:
+            self._asgi_app = asgineer.to_asgi(app)
 
         self._out_writes = []
 
@@ -383,7 +382,6 @@ class MockTestServer(BaseTestServer):
 
     def _make_lifespan_task(self):
         scope = {"type": "lifespan"}
-        app_object = self._asgi_app(scope)
 
         async def receive():
             while True:
@@ -394,7 +392,7 @@ class MockTestServer(BaseTestServer):
         async def send(m):
             self._lifespan_completes.append(m["type"])
 
-        return self._loop.create_task(app_object(receive, send))
+        return self._loop.create_task(self._asgi_app(scope, receive, send))
 
     def _wait_for_lifespan_complete(self, what, timeout=5):
         what_complete = f"lifespan.{what}.complete"
@@ -470,9 +468,7 @@ class MockTestServer(BaseTestServer):
         req = requests.Request(method, url, **kwargs)
         p = req.prepare()  # Get the "resolved" request
         p.headers.setdefault("user-agent", "asgi_mock_server")
-
         scope = self._make_scope(p)
-        app_object = self._asgi_app(scope)
 
         # ---
 
@@ -504,7 +500,7 @@ class MockTestServer(BaseTestServer):
                 pass  # ignore?
 
         response = []
-        await app_object(receive, send)
+        await self._asgi_app(scope, receive, send)
         response.append(b"".join(server_to_client))
         return tuple(response)
 
@@ -513,9 +509,7 @@ class MockTestServer(BaseTestServer):
         req = requests.Request("GET", url)
         p = req.prepare()  # Get the "resolved" request
         p.headers.setdefault("user-agent", "asgi_mock_server")
-
         scope = self._make_scope(p)
-        app_object = self._asgi_app(scope)
 
         # ---
 
@@ -572,7 +566,7 @@ class MockTestServer(BaseTestServer):
                     except IOError:
                         return
 
-        loop.create_task(app_object(receive, send))
+        loop.create_task(self._asgi_app(scope, receive, send))
         client_to_server.append({"type": "websocket.connect"})
         ws = WS()
         result = await client_co_func(ws)
