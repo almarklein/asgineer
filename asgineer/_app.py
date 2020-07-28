@@ -92,7 +92,7 @@ def to_asgi(handler):
         elif scope["type"] == "lifespan":
             await _handle_lifespan(receive, send)
         else:
-            logger.warn(f"Unknown ASGI type {scope['type']}")
+            logger.warning(f"Unknown ASGI type {scope['type']}")
 
     application.__module__ = handler.__module__
     application.__name__ = handler.__name__
@@ -119,7 +119,7 @@ async def _handle_lifespan(receive, send):
             await send({"type": "lifespan.shutdown.complete"})
             return
         else:
-            logger.warn(f"Unknown lifespan message {message['type']}")
+            logger.warning(f"Unknown lifespan message {message['type']}")
 
 
 async def _handle_websocket(handler, request, receive, send):
