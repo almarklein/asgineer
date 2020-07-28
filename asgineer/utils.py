@@ -16,9 +16,9 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     """
     Get a coroutine function for efficiently serving in-memory assets.
     The resulting handler functon takes care of setting the appropriate
-    content-type header, sending compressed responses when possible, and
-    applying appropriate HTTP caching (using etag and cache-control headers).
-    Usage:
+    content-type header, sending compressed responses when
+    possible/sensible, and applying appropriate HTTP caching (using
+    etag and cache-control headers). Usage:
     
     .. code-block:: python
     
@@ -61,9 +61,10 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
       based on the filename extensions of the keys in the asset dicts. If the
       key does not contain a dot, the ``content-type`` will be based on the
       body of the asset.
-    * If the asset is over ``min_compress_size`` bytes, and the request
-      has a ``accept-encoding`` header that contains "gzip", the data
-      is send in compressed form.
+    * If the asset is over ``min_compress_size`` bytes,  the request
+      has a ``accept-encoding`` header that contains "gzip", and the
+      compressed data is less that 90% of the raw data, the data is
+      send in compressed form.
     """
 
     if not isinstance(assets, dict):
@@ -85,9 +86,11 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
             raise ValueError("Asset bodies must be str or bytes.")
         # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
-        # Store zipped version if above limit
+        # Store zipped version if above limit, and compression is better that 90%
         if len(bbody) >= min_compress_size:
-            zipped[key] = gzip.compress(bbody)
+            bbody_zipped = gzip.compress(bbody)
+            if len(bbody_zipped) < 0.90 * len(bbody):
+                zipped[key] = bbody_zipped
         # Store mimetype
         ctype, enc = mimetypes.guess_type(key)
         if ctype:
