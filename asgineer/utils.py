@@ -55,7 +55,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     * If the given path is not present in the asset dict (case insensitive),
       a 404-not-found response is returned.
     * The ``etag`` header is set to a (sha256) hash of the body of the asset.
-    * The ``cache-control`` header is set to "public must-revalidate max-age=xx".
+    * The ``cache-control`` header is set to "public, must-revalidate, max-age=xx".
     * If the request has a ``if-none-match`` header that matches the etag,
       the handler responds with 304 (indicating to the client that the resource
       is still up-to-date).
@@ -115,7 +115,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         request_etag = request.headers.get("if-none-match", None)
         headers = {
             "etag": content_etag,
-            "cache-control": f"public must-revalidate max-age={max_age:d}",
+            "cache-control": f"public, must-revalidate, max-age={max_age:d}",
         }
 
         # If client already has the exact asset, send confirmation now

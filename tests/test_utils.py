@@ -13,7 +13,7 @@ uncompressable_data = bytes([int(random.uniform(0, 255)) for i in range(1000)])
 # def test_normalize_response()  -> tested as part of test_app
 
 
-def test_make_asset_handler():
+def test_make_asset_handler_fails():
 
     if get_backend() != "mock":
         skip("Can only test this with mock server")
@@ -22,6 +22,12 @@ def test_make_asset_handler():
         asgineer.utils.make_asset_handler("not a dict")
     with raises(ValueError):
         asgineer.utils.make_asset_handler({"notstrorbytes": 4})
+
+
+def test_make_asset_handler():
+
+    if get_backend() != "mock":
+        skip("Can only test this with mock server")
 
     # Make a server
     assets = {
@@ -52,6 +58,7 @@ def test_make_asset_handler():
     assert server.get("b.xx").headers["content-type"] == "application/octet-stream"
 
     assert r1.headers["etag"]
+    assert "max-age=0" in [x.strip() for x in r1.headers["cache-control"].split(",")]
     assert r2a.headers["etag"]
     assert r2b.headers["etag"]
     assert r2a.headers["etag"] != r2b.headers["etag"]
@@ -115,5 +122,28 @@ def test_make_asset_handler():
         assert len(r.body) < len(plainbody)
 
 
+def test_make_asset_handler_max_age():
+    if get_backend() != "mock":
+        skip("Can only test this with mock server")
+
+    # Make a server
+    assets = {
+        "foo.html": "bla",
+        "foo.bmp": compressable_data,
+        "foo.png": uncompressable_data,
+    }
+    handler = asgineer.utils.make_asset_handler(assets, max_age=9999)
+    server = make_server(asgineer.to_asgi(handler))
+
+    # Do simple requests and check validity
+    r1 = server.get("foo.html")
+    assert r1.status == 200
+
+    assert r1.headers["etag"]
+    assert "max-age=9999" in [x.strip() for x in r1.headers["cache-control"].split(",")]
+
+
 if __name__ == "__main__":
+    test_make_asset_handler_fails()
     test_make_asset_handler()
+    test_make_asset_handler_max_age()
