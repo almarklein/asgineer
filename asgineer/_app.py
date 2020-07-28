@@ -239,7 +239,6 @@ async def _handle_http(handler, request, receive, send):
         start_is_sent = False
         try:
             async for chunk in body:
-                print("Chunk!")
                 if isinstance(chunk, str):
                     chunk = chunk.encode()
                 if not isinstance(chunk, bytes):
