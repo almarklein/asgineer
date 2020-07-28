@@ -81,42 +81,52 @@ def to_asgi(handler):
             "asgineer.to_asgi() handler function must be a coroutine function."
         )
 
-    async def application(scope, receive, send):
+    async def application_wrapper(scope, receive, send):
+        return await asgineer_application(handler, scope, receive, send)
 
-        if scope["type"] == "http":
-            request = HttpRequest(scope, receive)
-            await _handle_http(handler, request, receive, send)
-        elif scope["type"] == "websocket":
-            request = WebsocketRequest(scope, receive, send)
-            await _handle_websocket(handler, request, receive, send)
-        elif scope["type"] == "lifespan":
-            await _handle_lifespan(receive, send)
-        else:
-            logger.warning(f"Unknown ASGI type {scope['type']}")
+    application_wrapper.__module__ = handler.__module__
+    application_wrapper.__name__ = handler.__name__
+    application_wrapper.__doc__ = handler.__doc__
+    application_wrapper.asgineer_handler = handler
+    return application_wrapper
 
-    application.__module__ = handler.__module__
-    application.__name__ = handler.__name__
-    application.asgineer_handler = handler
-    return application
+
+async def asgineer_application(handler, scope, receive, send):
+
+    # server_version = scope["asgi"].get("version", "2.0")
+    # spec_version = scope["asgi"].get("spec_version", "2.0")
+
+    if scope["type"] == "http":
+        request = HttpRequest(scope, receive)
+        await _handle_http(handler, request, receive, send)
+    elif scope["type"] == "websocket":
+        request = WebsocketRequest(scope, receive, send)
+        await _handle_websocket(handler, request, receive, send)
+    elif scope["type"] == "lifespan":
+        await _handle_lifespan(receive, send)
+    else:
+        logger.warning(f"Unknown ASGI type {scope['type']}")
 
 
 async def _handle_lifespan(receive, send):
     while True:
         message = await receive()
         if message["type"] == "lifespan.startup":
-            # Could do startup stuff here
             try:
+                # Could do startup stuff here
                 logger.info("Server is starting up")
-            except Exception:  # pragma: no cover
-                pass
-            await send({"type": "lifespan.startup.complete"})
+            except Exception as err:  # pragma: no cover
+                await send({"type": "lifespan.startup.failed", "message": str(err)})
+            else:
+                await send({"type": "lifespan.startup.complete"})
         elif message["type"] == "lifespan.shutdown":
-            # Could do shutdown stuff here
             try:
+                # Could do shutdown stuff here
                 logger.info("Server is shutting down")
-            except Exception:  # pragma: no cover
-                pass
-            await send({"type": "lifespan.shutdown.complete"})
+            except Exception as err:  # pragma: no cover
+                await send({"type": "lifespan.shutdown.failed", "message": str(err)})
+            else:
+                await send({"type": "lifespan.shutdown.complete"})
             return
         else:
             logger.warning(f"Unknown lifespan message {message['type']}")
@@ -138,7 +148,7 @@ async def _handle_websocket(handler, request, receive, send):
         # The ASGI spec specifies that ASGI servers should close
         # the ws connection when the task ends. At the time of
         # writing (04-10-2018), only Uvicorn does this.
-        # TODO: Remove this once all servers behave correctly
+        # So ... just close for good measure.
         try:
             await request.close()
         except Exception:
