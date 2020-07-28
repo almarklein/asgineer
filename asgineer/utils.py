@@ -11,6 +11,8 @@ from ._app import normalize_response, guess_content_type_from_body
 
 __all__ = ["normalize_response", "make_asset_handler", "guess_content_type_from_body"]
 
+VIDEO_EXTENSIONS = ".mp4", ".3gp", ".webm"
+
 
 def make_asset_handler(assets, max_age=0, min_compress_size=256):
     """
@@ -61,10 +63,10 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
       based on the filename extensions of the keys in the asset dicts. If the
       key does not contain a dot, the ``content-type`` will be based on the
       body of the asset.
-    * If the asset is over ``min_compress_size`` bytes,  the request
-      has a ``accept-encoding`` header that contains "gzip", and the
-      compressed data is less that 90% of the raw data, the data is
-      send in compressed form.
+    * If the asset is over ``min_compress_size`` bytes, is not a video, the
+      request has a ``accept-encoding`` header that contains "gzip",
+      and the compressed data is less that 90% of the raw data, the
+      data is send in compressed form.
     """
 
     if not isinstance(assets, dict):
@@ -86,11 +88,12 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
             raise ValueError("Asset bodies must be str or bytes.")
         # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
-        # Store zipped version if above limit, and compression is better that 90%
+        # Store zipped version if it makes sense
         if len(bbody) >= min_compress_size:
-            bbody_zipped = gzip.compress(bbody)
-            if len(bbody_zipped) < 0.90 * len(bbody):
-                zipped[key] = bbody_zipped
+            if not key.endswith(VIDEO_EXTENSIONS):
+                bbody_zipped = gzip.compress(bbody)
+                if len(bbody_zipped) < 0.90 * len(bbody):
+                    zipped[key] = bbody_zipped
         # Store mimetype
         ctype, enc = mimetypes.guess_type(key)
         if ctype:
@@ -130,6 +133,9 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         else:
             body = assets[path]
 
+        # Note that we always return bytes, not a stream-response. The
+        # assets used with this utility are assumed to be small-ish,
+        # since they are in-memory.
         return 200, headers, body
 
     return asset_handler
