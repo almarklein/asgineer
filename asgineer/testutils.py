@@ -181,15 +181,13 @@ def closer():
 
 app = APP
 
-async def stub_responder(receive, send):
-    await send({"type": "http.response.start", "status": 200, "headers": []})
-    await send({"type": "http.response.body", "body": b""})
 
-def proxy_app(scope):
+async def proxy_app(scope, receive, send):
     if scope["path"].startswith("/specialtestpath/"):
-        return stub_responder
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
     else:
-        return app(scope)
+        return await app(scope, receive, send)
 
 if __name__ == "__main__":
     threading.Thread(target=closer).start()
