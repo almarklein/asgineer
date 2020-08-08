@@ -3,20 +3,47 @@ This module implements the HttpRequest and WebsocketRequest classes that
 are passed as an argument into the user's handler function.
 """
 
+import weakref
 import json
 from urllib.parse import parse_qsl  # urlparse, unquote
 
+from ._compat import sleep, Event, wait_for_any_then_cancel_the_rest
 
-class BaseRequest:
-    """ Base request class.
+
+CONNECTING = 0
+CONNECTED = 1
+DONE = 2
+DISCONNECTED = 3
+
+
+class DisconnectedError(IOError):
+    """ An error raised when the connection is disconnected by the client.
+    Subclass of IOError.
     """
 
-    __slots__ = ("_scope", "_headers", "_querylist")
+
+class BaseRequest:
+    """ Base request class, defining the properties to get access to
+    the request metadata.
+    """
+
+    __slots__ = ("__weakref__", "_scope", "_headers", "_querylist", "_request_sets")
 
     def __init__(self, scope):
         self._scope = scope
         self._headers = None
         self._querylist = None
+        self._request_sets = set()
+
+    async def _destroy(self):
+        """ Method to be used internally to perform cleanup.
+        """
+        for s in self._request_sets:
+            try:
+                s.discard(self)
+            except Exception:
+                pass
+        self._request_sets.clear()
 
     @property
     def scope(self):
@@ -103,35 +130,153 @@ class HttpRequest(BaseRequest):
     of this class is passed to the request handler.
     """
 
-    __slots__ = ("_receive", "_iter_done", "_body")
+    __slots__ = (
+        "_receive",
+        "_send",
+        "_client_state",
+        "_app_state",
+        "_body",
+        "_wakeup_event",
+    )
 
-    def __init__(self, scope, receive):
+    def __init__(self, scope, receive, send):
         super().__init__(scope)
         self._receive = receive
-        self._iter_done = False
+        self._send = send
+        self._client_state = CONNECTED  # CONNECTED -> DONE -> DISCONNECTED
+        self._app_state = CONNECTING  # CONNECTING -> CONNECTED -> DONE
         self._body = None
+        self._wakeup_event = None
+
+    async def accept(self, status=200, headers={}):
+        """ Accept this http request. Sends the status code and headers.
+
+        In Asgineer, a response can be provided in two ways. The simpler
+        (preferred) way is to let the handler return status, headers
+        and body. Alternatively, one can use use ``accept()`` and
+        ``send()``. In the latter case, the handler must return None.
+
+        Using ``accept()`` and ``send()`` is mostly intended for
+        long-lived responses such as chunked data, long polling and
+        SSE.
+
+        Note that when using a handler return value, Asgineer
+        automatically sets headers based on the body. This is not the
+        case when using ``accept``. (Except that the ASGI server will
+        set "transfer-encoding" to "chunked" if "content-length" is not
+        specified.)
+        """
+        # Check status
+        if self._app_state != CONNECTING:
+            raise IOError("Cannot accept an already accepted connection.")
+        # Check and convert input
+        status = int(status)
+        try:
+            rawheaders = [(k.encode(), v.encode()) for k, v in headers.items()]
+        except Exception:
+            raise TypeError("Header keys and values must all be strings.")
+        # Send our first message
+        self._app_state = CONNECTED
+        msg = {"type": "http.response.start", "status": status, "headers": rawheaders}
+        await self._send(msg)
+
+    async def _receive_chunk(self):
+        """ Receive a chunk of data, returning a bytes object.
+        Raises ``DisconnectedError`` if the connection is closed.
+        """
+        # Check status
+        if self._client_state == DISCONNECTED:
+            raise DisconnectedError()
+        # Receive
+        message = await self._receive()
+        mt = message["type"]
+        if mt == "http.request":
+            data = bytes(message.get("body", b""))  # some servers return bytearray
+            if not message.get("more_body", False):
+                self._client_state = DONE
+            return data
+        elif mt == "http.disconnect":  # pragma: no cover
+            self._client_state = DISCONNECTED
+            raise DisconnectedError()
+        else:  # pragma: no cover
+            raise IOError(f"Unexpected message type: {mt}")
+
+    async def send(self, data, more=True):
+        """ Send (a chunk of) data, representing the response. Note that
+        ``accept()`` must be called first. See ``accept()`` for details.
+        """
+        # Compose message
+        more = bool(more)
+        if isinstance(data, str):
+            data = data.encode()
+        elif not isinstance(data, bytes):
+            raise TypeError(f"Can only send bytes/str over http, not {type(data)}.")
+        message = {"type": "http.response.body", "body": data, "more_body": more}
+        # Send
+        if self._app_state == CONNECTED:
+            if not more:
+                self._app_state = DONE
+            await self._send(message)
+        elif self._app_state == "CONNECTING":
+            raise IOError("Cannot send before calling accept.")
+        else:
+            raise IOError("Cannot send to an disconnected ws.")
+
+    async def sleep_while_connected(self, seconds):
+        """ A method similar to ``asyncio.sleep()``, intended for use in long
+        polling and server side events (SSE):
+
+        * Returns after the given amount of seconds.
+        * Returns when the request ``wakeup()`` is called.
+        * Raises ``DisconnectedError`` when the connection is closed.
+        * Note that this drops all received data.
+        """
+        if self._wakeup_event is None:
+            self._wakeup_event = Event()
+        self._wakeup_event.clear()
+        await wait_for_any_then_cancel_the_rest(
+            sleep(seconds), self._wakeup_event.wait(), self._receive_until_disconnect(),
+        )
+        if self._client_state == DISCONNECTED:
+            raise DisconnectedError()
+
+    async def _receive_until_disconnect(self):
+        """ Keep receiving until the client disconnects.
+        """
+        while True:
+            try:
+                await self.receive_chunk()
+            except DisconnectedError:
+                break
+
+    async def wakeup(self):
+        """ Awake any tasks that are waiting in ``sleep_while_connected()``.
+        """
+        if self._wakeup_event is not None:
+            self._wakeup_event.set()
 
     async def iter_body(self):
         """ Async generator that iterates over the chunks in the body.
         During iteration you should probably take measures to avoid excessive
         memory usage to prevent server vulnerabilities.
+        Raises ``DisconnectedError`` if the connection is closed.
         """
-        if self._iter_done:
-            raise IOError("Request body was already consumed.")
-        self._iter_done = True
+        # Check status
+        if self._client_state == DISCONNECTED:
+            raise DisconnectedError()
+        elif self._client_state == DONE:
+            raise IOError("Cannot receive an http request that is already consumed.")
+        # Iterate
         while True:
-            message = await self._receive()
-            if message["type"] == "http.request":
-                yield bytes(message.get("body", b""))  # some servers return bytearray
-                if not message.get("more_body", False):
-                    break
-            elif message["type"] == "http.disconnect":  # pragma: no cover
-                raise IOError("Client disconnected.")
+            chunk = await self._receive_chunk()
+            yield chunk
+            if self._client_state != CONNECTED:  # i.e. DONE or DISCONNECTED
+                break
 
     async def get_body(self, limit=10 * 2 ** 20):
         """ Async function to get the bytes of the body.
         If the end of the stream is not reached before the byte limit
-        is reached (default 10MiB), raises an IOError.
+        is reached (default 10MiB), raises an ``IOError``.
         """
         if self._body is None:
             nbytes = 0
@@ -148,15 +293,10 @@ class HttpRequest(BaseRequest):
     async def get_json(self, limit=10 * 2 ** 20):
         """ Async function to get the body as a dict.
         If the end of the stream is not reached before the byte limit
-        is reached (default 10MiB), raises an IOError.
+        is reached (default 10MiB), raises an ``IOError``.
         """
         body = await self.get_body(limit)
         return json.loads(body.decode())
-
-
-CONNECTING = 0
-CONNECTED = 1
-DISCONNECTED = 2
 
 
 class WebsocketRequest(BaseRequest):
@@ -164,120 +304,156 @@ class WebsocketRequest(BaseRequest):
     object of this class is passed to the request handler.
     """
 
-    __slots__ = ("_receive", "_send", "_client_state", "_application_state")
+    __slots__ = ("_receive", "_send", "_client_state", "_app_state")
 
     def __init__(self, scope, receive, send):
         assert scope["type"] == "websocket", f"Unexpected ws scope type {scope['type']}"
         super().__init__(scope)
         self._receive = receive
         self._send = send
-        self._client_state = CONNECTING
-        self._application_state = CONNECTING
-
-    async def raw_receive(self):
-        """ Async function to receive an ASGI websocket message,
-        ensuring valid state transitions.
-        """
-        if self._client_state == CONNECTING:
-            message = await self._receive()
-            mt = message["type"]
-            assert mt == "websocket.connect", f"Unexpected ws message type {mt}"
-            self._client_state = CONNECTED
-            return message
-        elif self._client_state == CONNECTED:
-            message = await self._receive()
-            mt = message["type"]
-            ok_types = {"websocket.receive", "websocket.disconnect"}
-            assert mt in ok_types, f"Unexpected ws message type {mt}"
-            if mt == "websocket.disconnect":
-                self._client_state = DISCONNECTED
-            return message
-        else:  # pragma: no cover
-            raise IOError(
-                'Cannot call "receive" once a client disconnect message has been received.'
-            )
-
-    async def raw_send(self, message):
-        """ Async function tp send a ASGI websocket message,
-        ensuring valid state transitions.
-        """
-        if self._application_state == CONNECTING:
-            mt = message["type"]
-            ok_types = {"websocket.accept", "websocket.close"}
-            assert mt in ok_types, f"Unexpected ws message type {mt}"
-            if mt == "websocket.close":
-                self._application_state = DISCONNECTED
-            else:
-                self._application_state = CONNECTED
-            await self._send(message)
-        elif self._application_state == CONNECTED:
-            mt = message["type"]
-            ok_types = {"websocket.send", "websocket.close"}
-            assert mt in ok_types, f"Unexpected ws message type {mt}"
-            if mt == "websocket.close":
-                self._application_state = DISCONNECTED
-            await self._send(message)
-        else:
-            raise IOError('Cannot call "send" once a close message has been sent.')
+        self._client_state = CONNECTING  # CONNECTING -> CONNECTED -> DISCONNECTED
+        self._app_state = CONNECTING  # CONNECTING -> CONNECTED -> DISCONNECTED
 
     async def accept(self, subprotocol=None):
         """ Async function to accept the websocket connection.
         This needs to be called before any sending or receiving.
+        Raises ``DisconnectedError`` if the client closed the connection.
         """
+        # If we haven't yet seen the 'connect' message, then wait for it first.
         if self._client_state == CONNECTING:
-            # If we haven't yet seen the 'connect' message, then wait for it first.
-            await self.raw_receive()
-        await self.raw_send({"type": "websocket.accept", "subprotocol": subprotocol})
+            message = await self._receive()
+            mt = message["type"]
+            if mt == "websocket.connect":
+                self._client_state = CONNECTED
+            elif mt == "websocket.disconnect":
+                self._client_state = DISCONNECTED
+                raise DisconnectedError()
+            else:
+                raise IOError(f"Unexpected ws message type {mt}")
+        elif self._client_state == DISCONNECTED:
+            raise DisconnectedError()
+        # Accept from our side
+        if self._app_state == CONNECTING:
+            await self._send({"type": "websocket.accept", "subprotocol": subprotocol})
+            self._app_state = CONNECTED
+        else:
+            raise IOError("Cannot accept an already accepted ws connection.")
 
-    async def receive_iter(self):
-        """ Async generator to iterate over incoming messaged as long
-        as the connection is not closed. Each message can be a ``bytes`` or ``str``.
-        """
-        assert self._application_state == CONNECTED, self._application_state
-        while True:
-            message = await self.raw_receive()
-            if message["type"] == "websocket.disconnect":
-                return
-            # ASGI specifies that either bytes or text is present
-            yield message.get("bytes", None) or message.get("text", None) or b""
-
-    async def receive(self):
-        """ Async function to receive one websocket message. The result can be
-        ``bytes`` or ``str``. Raises ``EOFError`` when a disconnect-message is received.
-        """
-        assert self._application_state == CONNECTED, self._application_state
-        message = await self.raw_receive()
-        if message["type"] == "websocket.disconnect":
-            raise EOFError("Websocket disconnect", message.get("code", 1000))
-        return message.get("bytes", None) or message.get("text", None) or b""
-
-    # todo: maybe receive_bytes and/or receive_text?
-
-    async def receive_json(self):
-        """ Async convenience function to receive a JSON message. Works
-        on binary as well as text messages, as long as its JSON encoded.
-        """
-        message = await self.receive()
-        if isinstance(message, bytes):
-            message = message.decode()
-        return json.loads(message)
-
-    async def send(self, value):
+    async def send(self, data):
         """ Async function to send a websocket message. The value can
         be ``bytes``, ``str`` or ``dict``. In the latter case, the message is
         encoded with JSON (and UTF-8).
         """
-        if isinstance(value, bytes):
-            await self.raw_send({"type": "websocket.send", "bytes": value})
-        elif isinstance(value, str):
-            await self.raw_send({"type": "websocket.send", "text": value})
-        elif isinstance(value, dict):
-            encoded = json.dumps(value).encode()
-            await self.raw_send({"type": "websocket.send", "bytes": encoded})
+        # Compose message
+        if isinstance(data, bytes):
+            message = {"type": "websocket.send", "bytes": data}
+        elif isinstance(data, str):
+            message = {"type": "websocket.send", "text": data}
+        elif isinstance(data, dict):
+            encoded = json.dumps(data).encode()
+            message = {"type": "websocket.send", "bytes": encoded}
         else:
-            raise TypeError("Can only send bytes/str/dict.")
+            raise TypeError(f"Can only send bytes/str/dict over ws, not {type(data)}")
+        # Send it
+        if self._app_state == CONNECTED:
+            await self._send(message)
+        elif self._app_state == CONNECTING:
+            raise IOError("Cannot send before calling accept on ws.")
+        else:
+            raise IOError("Cannot send to an disconnected ws.")
+
+    async def receive(self):
+        """ Async function to receive one websocket message. The result can be
+        ``bytes`` or ``str`` (depending on how it was sent).
+        Raises ``DisconnectedError`` if the client closed the connection.
+        """
+        # Get it
+        if self._client_state == CONNECTED:
+            message = await self._receive()
+        elif self._client_state == DISCONNECTED:
+            raise DisconnectedError()
+        else:
+            raise IOError("Cannot receive before calling accept on ws.")
+        # Process
+        mt = message["type"]
+        if mt == "websocket.receive":
+            return message.get("bytes", None) or message.get("text", None) or b""
+        elif mt == "websocket.disconnect":
+            self._client_state = DISCONNECTED
+            raise DisconnectedError(f"ws disconnect {message.get('code', 1000)}")
+        else:
+            raise IOError(f"Unexpected ws message type {mt}")
+
+    async def receive_iter(self):
+        """ Async generator to iterate over incoming messages as long
+        as the connection is not closed. Each message can be a ``bytes`` or ``str``.
+        """
+        while True:
+            try:
+                result = await self.receive()
+                yield result
+            except DisconnectedError:
+                break
+
+    async def receive_json(self):
+        """ Async convenience function to receive a JSON message. Works
+        on binary as well as text messages, as long as its JSON encoded.
+        Raises ``DisconnectedError`` if the client closed the connection.
+        """
+        result = await self.receive()
+        if isinstance(result, bytes):
+            result = result.decode()
+        return json.loads(result)
 
     async def close(self, code=1000):
         """ Async function to close the websocket connection.
         """
-        await self.raw_send({"type": "websocket.close", "code": code})
+        await self._send({"type": "websocket.close", "code": code})
+        self._app_state = DISCONNECTED
+
+    # todo: implement sleep_while_connected, and wakeup
+
+
+class RequestSet:
+    """ A set of request objects that are currenlty active.
+
+    This class can help manage long-lived connections such as with long
+    polling, SSE or websockets. All requests in as set can easily be
+    awoken at once, and requests are automatically removed from the set
+    when they're done.
+    """
+
+    def __init__(self):
+        self._s = weakref.WeakSet()
+
+    def __len__(self):
+        return len(self._s)
+
+    def __iter__(self):
+        return iter(self._s)
+
+    def add(self, request):
+        """ Add a request object to the set.
+        """
+        if not isinstance(request, BaseRequest):
+            raise TypeError("RequestSet can only contain request objects.")
+        request._request_sets.add(self)
+        self._s.add(request)
+
+    def discard(self, request):
+        """ Remove the given request object from the set.
+        If not present, it is ignored.
+        """
+        self._s.discard(request)
+
+    def clear(self):
+        """ Remove all request objects from the set.
+        """
+        self._s.clear()
+
+    async def wakeup_all(self):
+        """ Wake up all tasks that are waiting for any of the request's
+        ``sleep_while_connected`` coroutine.
+        """
+        for request in self._s:
+            await request.wakeup()

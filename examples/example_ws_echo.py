@@ -1,5 +1,5 @@
 """
-Demonstrate websocket usage.
+Example websocket app that echos websocket messages.
 """
 
 import asgineer
@@ -39,25 +39,22 @@ async def main(request):
     if not request.path.rstrip("/"):
         return index  # Asgineer sets the text/html content type
     elif request.path.startswith("/ws"):
-        return await websocket_handler(request)
+        assert request.scope["type"] == "websocket", "Expected ws"
+        await request.accept()
+        await websocket_handler(request)
     else:
         return 404, {}, f"404 not found {request.path}"
 
 
 async def websocket_handler(request):
-    assert request.scope["type"] == "websocket", "Expected ws"
     print("request", request)
-
-    await request.accept()
     await request.send("hello!")
-
-    async for m in request.receive_iter():
+    while True:
+        m = await request.receive()
         await request.send("echo: " + str(m))
         print(m)
 
     print("done")
-    # The moment that we return, the websocket will be closed
-    # (if the ASGI server behaves correctly)
 
 
 if __name__ == "__main__":

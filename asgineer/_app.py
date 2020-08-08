@@ -7,8 +7,8 @@ import sys
 import json
 import logging
 import inspect
-from ._request import HttpRequest, WebsocketRequest
-
+from . import _request
+from ._request import HttpRequest, WebsocketRequest, DisconnectedError
 
 # Initialize the logger
 logger = logging.getLogger("asgineer")
@@ -97,11 +97,11 @@ async def asgineer_application(handler, scope, receive, send):
     # spec_version = scope["asgi"].get("spec_version", "2.0")
 
     if scope["type"] == "http":
-        request = HttpRequest(scope, receive)
-        await _handle_http(handler, request, receive, send)
+        request = HttpRequest(scope, receive, send)
+        await _handle_http(handler, request)
     elif scope["type"] == "websocket":
         request = WebsocketRequest(scope, receive, send)
-        await _handle_websocket(handler, request, receive, send)
+        await _handle_websocket(handler, request)
     elif scope["type"] == "lifespan":
         await _handle_lifespan(receive, send)
     else:
@@ -132,137 +132,122 @@ async def _handle_lifespan(receive, send):
             logger.warning(f"Unknown lifespan message {message['type']}")
 
 
-async def _handle_websocket(handler, request, receive, send):
+async def _handle_websocket(handler, request):
 
-    # === Call websocket handler
     try:
 
         result = await handler(request)
 
+        if result is not None:
+            error_text = (
+                "A websocket handler should return None; "
+                + "use request.send() and request.receive() to communicate."
+            )
+            raise IOError(error_text)
+
     except Exception as err:
-        # Error in the handler
         error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
         logger.error(error_text, exc_info=err)
-        return
+
     finally:
+
         # The ASGI spec specifies that ASGI servers should close
         # the ws connection when the task ends. At the time of
         # writing (04-10-2018), only Uvicorn does this.
         # So ... just close for good measure.
+        # todo: can we remove this?
         try:
             await request.close()
         except Exception:
             pass
 
-    # === Process the handler output
-    if result is not None:
-        # It's likely that the user is misunderstanding how ws handlers work.
-        # Let's be strict and give directions.
-        error_text = (
-            "A websocket handler should return None; "
-            + "use request.send() and request.receive() to communicate."
-        )
-        logger.error(error_text)
+        # Also clean up
+        try:
+            await request._destroy()
+        except Exception as err:
+            logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)
 
 
-async def _handle_http(handler, request, receive, send):
+async def _handle_http(handler, request):
 
-    # === Call request handler to get the result
     try:
 
+        # Call request handler to get the result
+        where = "request handler"
         result = await handler(request)
 
-    except Exception as err:
-        # Error in the handler
-        error_text = f"{type(err).__name__} in request handler: {str(err)}"
-        logger.error(error_text, exc_info=err)
-        await send({"type": "http.response.start", "status": 500, "headers": []})
-        await send({"type": "http.response.body", "body": error_text.encode()})
-        return
-
-    # === Process the handler output
-    try:
-
-        status, headers, body = normalize_response(result)
-
-        # Make sure that there is a content type
-        if "content-type" not in headers:
-            headers["content-type"] = guess_content_type_from_body(body)
-
-        # Convert the body
-        if isinstance(body, bytes):
-            pass
-        elif isinstance(body, str):
-            body = body.encode()
-        elif isinstance(body, dict):
-            try:
-                body = json.dumps(body).encode()
-            except Exception as err:
-                raise ValueError(f"Could not JSON encode body: {err}")
-        elif inspect.isasyncgen(body):
-            pass
-        else:
-            if inspect.isgenerator(body):
-                raise ValueError(
-                    "Body cannot be a regular generator, use an async generator."
-                )
-            elif inspect.iscoroutine(body):
-                raise ValueError("Body cannot be a coroutine, forgot await?")
+        if request._app_state == _request.CONNECTING:
+            # Process the handler output
+            where = "processing handler output"
+            status, headers, body = normalize_response(result)
+            # Make sure that there is a content type
+            if "content-type" not in headers:
+                headers["content-type"] = guess_content_type_from_body(body)
+            # Convert the body
+            if isinstance(body, bytes):
+                pass
+            elif isinstance(body, str):
+                body = body.encode()
+            elif isinstance(body, dict):
+                try:
+                    body = json.dumps(body).encode()
+                except Exception as err:
+                    raise ValueError(f"Could not JSON encode body: {err}")
+            elif inspect.isasyncgen(body):
+                # todo: deprecate this?
+                pass
             else:
-                raise ValueError(f"Body cannot be {type(body)}.")
+                if inspect.isgenerator(body):
+                    raise ValueError(
+                        "Body cannot be a regular generator, use an async generator."
+                    )
+                elif inspect.iscoroutine(body):
+                    raise ValueError("Body cannot be a coroutine, forgot await?")
+                else:
+                    raise ValueError(f"Body cannot be {type(body)}.")
+            # Send response. Note that per the spec, if we do not specify
+            # the content-length, the server sets Transfer-Encoding to chunked.
+            if isinstance(body, bytes):
+                where = "sending response"
+                headers.setdefault("content-length", str(len(body)))
+                await request.accept(status, headers)
+                await request.send(body, more=False)
+            else:
+                where = "sending chunked response"
+                accepted = False
+                async for chunk in body:
+                    if not isinstance(chunk, (bytes, str)):
+                        raise ValueError("Response chunks must be bytes or str.")
+                    if not accepted:
+                        await request.accept(status, headers)
+                        accepted = True
+                    await request.send(chunk)
 
-        # Convert and further validate headers
-        if isinstance(body, bytes):
-            headers.setdefault("content-length", str(len(body)))
-        try:
-            rawheaders = [(k.encode(), v.encode()) for k, v in headers.items()]
-        except Exception:
-            raise ValueError("Header keys and values must all be strings.")
+        else:
+            # If the handler accepted the request, it should use send, not return.
+            if result is not None:
+                raise IOError("Handlers that call request.accept() should return None.")
+
+        # Mark end of data, if needed
+        if request._app_state == _request.CONNECTED:
+            where = "finalizing response"
+            await request.send(b"", more=False)
+
+    except DisconnectedError:
+        pass  # Not really an error
 
     except Exception as err:
-        # Error in hanlding handler output
-        error_text = f"Error in processing handler output: {str(err)}"
-        logger.error(error_text)
-        await send({"type": "http.response.start", "status": 500, "headers": []})
-        await send({"type": "http.response.body", "body": error_text.encode()})
-        return
+        # Process errors. We log them, and if possible send a 500
+        error_text = f"{type(err).__name__} in {where}: {str(err)}"
+        logger.error(error_text, exc_info=err)
+        if request._app_state == _request.CONNECTING:
+            await request.accept(500, {})
+            await request.send(error_text, more=False)
 
-    # === Send response
-    start = {"type": "http.response.start", "status": status, "headers": rawheaders}
-    if isinstance(body, bytes):
-        # The easy way; body as one message, not much error catching we can do here.
-        await send(start)
-        if isinstance(body, bytes):
-            await send({"type": "http.response.body", "body": body})
-    else:
-        # Chunked response, stuff can go wrong in the middle
-        start_is_sent = False
+    finally:
+
+        # Clean up
         try:
-            async for chunk in body:
-                if isinstance(chunk, str):
-                    chunk = chunk.encode()
-                if not isinstance(chunk, bytes):
-                    raise TypeError(
-                        f"Body chunk must be str or bytes, not {type(chunk)}"
-                    )
-                if not start_is_sent:
-                    start_is_sent = True
-                    await send(start)
-                await send(
-                    {"type": "http.response.body", "body": chunk, "more_body": True}
-                )
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
-
+            await request._destroy()
         except Exception as err:
-            error_text = f"{type(err).__name__} in chunked response: {str(err)}"
-            logger.error(error_text, exc_info=err)
-            if not start_is_sent:
-                await send(
-                    {"type": "http.response.start", "status": 500, "headers": []}
-                )
-                await send({"type": "http.response.body", "body": error_text.encode()})
-            else:  # end-of-body has not been send
-                await send(
-                    {"type": "http.response.body", "body": b"", "more_body": False}
-                )
-            return
+            logger.error(f"Error in cleanup: {str(err)}", exc_info=err)

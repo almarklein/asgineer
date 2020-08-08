@@ -181,7 +181,7 @@ def test_websocket_receive_too_much():
         p.ws_communicate("/", client)
 
     assert "hellow" in p.out
-    assert "EOFError" in p.out and "websocket disconnect" in p.out.lower()
+    assert "DisconnectedError" in p.out and "ws disconnect" in p.out.lower()
     assert "KeyError" not in p.out
 
 

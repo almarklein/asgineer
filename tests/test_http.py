@@ -317,8 +317,8 @@ def test_chunking_fails():
         res = p.post("/", b"x")
 
     assert res.status == 500
-    assert "body was already consumed" in res.body.decode().lower()
-    assert "body was already consumed" in p.out.lower()
+    assert "already consumed" in res.body.decode().lower()
+    assert "already consumed" in p.out.lower()
 
     # Exceed memory
 
@@ -398,7 +398,7 @@ def test_errors():
         res = p.get("/")
 
     assert res.status == 500
-    assert "error in chunked response" in res.body.decode().lower()
+    assert "error in sending chunked response" in res.body.decode().lower()
     assert "woops" in res.body.decode()
     assert "woops" in p.out and "foo" not in p.out
     assert "xx-custom" not in res.headers
@@ -503,16 +503,16 @@ def test_wrong_output():
         res = p.get("/")
 
     assert res.status == 500
-    assert "error in chunked response" in res.body.decode().lower()
-    assert "body chunk must be" in res.body.decode().lower()
-    assert "body chunk must be" in p.out.lower()
+    assert "error in sending chunked response" in res.body.decode().lower()
+    assert "chunks must be" in res.body.decode().lower()
+    assert "chunks must be" in p.out.lower()
 
     with make_server(handler_output12) as p:
         res = p.get("/")
 
     assert res.status == 200  # too late to set status!
     assert res.body.decode() == "foo"
-    assert "body chunk must be" in p.out.lower()
+    assert "chunks must be" in p.out.lower()
 
     # Wrong header
 

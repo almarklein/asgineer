@@ -136,7 +136,8 @@ class BaseTestServer:
             url = self.url + "/" + path.lstrip("/")
 
         co = self._co_request(method, url, data=data, headers=headers, **kwargs)
-        status, headers, body = self._loop.run_until_complete(co)
+        co_res = self._loop.run_until_complete(co)
+        status, headers, body = co_res
         return Response(status, headers, body)
 
     def ws_communicate(self, path, client_co_func, loop=None):
