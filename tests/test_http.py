@@ -320,6 +320,42 @@ def test_chunking_fails():
     assert "already consumed" in res.body.decode().lower()
     assert "already consumed" in p.out.lower()
 
+    # Read fail - sleep_while_connected consumes data
+
+    async def handler_chunkfail4(request):
+        await request.sleep_while_connected(1.0)
+        chunks = []
+        async for chunk in request.iter_body():
+            chunks.append(chunk)
+        return b"".join(chunks)
+
+    with make_server(handler_chunkfail4) as p:
+        res = p.get("/", b"xx")
+
+    assert res.status == 500
+    assert "already consumed" in res.body.decode().lower()
+    assert "already consumed" in p.out.lower()
+
+    # Read fail - cannot iter after disconnect
+
+    async def handler_chunkfail5(request):
+        try:
+            await request.sleep_while_connected(1.0)
+        except asgineer.DisconnectedError:
+            pass
+        async for chunk in request.iter_body():
+            pass
+        chunk
+        return "ok"
+
+    if get_backend() == "mock":
+        with make_server(handler_chunkfail5) as p:
+            res = p.post("/", b"x")
+
+        assert res.status == 500
+        assert "already disconnected" in res.body.decode().lower()
+        assert "already disconnected" in p.out.lower()
+
     # Exceed memory
 
     async def handler_exceed_memory(request):
@@ -532,6 +568,90 @@ def test_wrong_output():
         assert res.status == 500
         assert "header keys and values" in res.body.decode().lower()
         assert "header keys and values" in p.out.lower()
+
+
+## Test using accept and send
+
+
+def test_using_accept_and_send():
+    async def handler(request):
+        await request.accept(200, {"xx-foo": "x"})
+        await request.send("hi!")
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 200
+    assert res.body.decode() == "hi!"
+    assert not p.out
+
+
+def test_cannot_accept_and_return():
+    async def handler(request):
+        await request.accept(200, {"xx-foo": "x"})
+        await request.send("hi!")
+        return 200, {"xx-foo": "x"}, "hi!"
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 200  # Because response has already been sent!
+    assert res.body.decode() == "hi!"
+    assert "should return None" in p.out
+
+
+def test_cannot_accept_twice():
+    async def handler(request):
+        await request.accept(200, {"xx-foo": "x"})
+        await request.accept(200, {"xx-foo": "x"})
+        await request.send("hi!")
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 200  # accept was already sent
+    assert res.body.decode() == ""  # but body was not
+    assert "cannot accept" in p.out.lower()
+
+
+def test_cannot_send_wrong_objects():
+    async def handler(request):
+        await request.accept(200, {"xx-foo": "x"})
+        await request.send({"foo": "bar"})
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 200  # accept was already sent
+    assert res.body.decode() == ""
+    assert "can only send" in p.out.lower()
+
+
+def test_cannot_send_before_accept():
+    async def handler(request):
+        await request.send("hi!")
+        await request.accept(200, {"xx-foo": "x"})
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 500
+    assert "cannot send before" in res.body.decode().lower()
+    assert "cannot send before" in p.out.lower()
+
+
+def test_cannot_send_after_closing():
+    async def handler(request):
+        await request.accept(200, {"xx-foo": "x"})
+        await request.send("hi!", more=False)
+        await request.send("hi!")
+
+    with make_server(handler) as p:
+        res = p.get("/")
+
+    assert res.status == 200
+    assert res.body.decode() == "hi!"
+    assert "cannot send to a closed" in p.out.lower()
 
 
 ## Test wrong usage

@@ -40,30 +40,41 @@ def test_make_asset_handler():
     handler = asgineer.utils.make_asset_handler(assets)
     server = make_server(asgineer.to_asgi(handler))
 
+    # Do some wrong requestrs
+    r0a = server.get("foo")
+    r0b = server.put("foo.html")
+
+    assert r0a.status == 404
+    assert r0b.status == 405
+
     # Do simple requests and check validity
-    r0 = server.get("foo")
-    r1 = server.get("foo.html")
+    r1a = server.get("foo.html")
+    r1b = server.request("head", "foo.html")
     r2a = server.get("foo.bmp")
     r2b = server.get("foo.png")
 
-    assert r0.status == 404
-    assert r1.status == 200 and r2a.status == 200 and r2b.status == 200
-    assert len(r1.body) == 3 and len(r2a.body) == 1000, len(r2b.body) == 1000
+    assert r1a.status == 200 and r1b.status == 200
+    assert len(r1a.body) == 3 and len(r1a.body) == 3
 
-    assert r1.headers["content-type"] == "text/html"
+    for r in (r1a, r1b):
+        assert r.headers["content-type"] == "text/html"
+        assert int(r.headers["content-length"]) == 3
+
+    assert r2a.status == 200 and r2b.status == 200
     assert r2b.headers["content-type"] == "image/png"
+    assert len(r2a.body) == 1000 and len(r2b.body) == 1000
 
     assert server.get("h.xx").headers["content-type"] == "text/html"
     assert server.get("t.xx").headers["content-type"] == "text/plain"
     assert server.get("b.xx").headers["content-type"] == "application/octet-stream"
 
-    assert r1.headers["etag"]
-    assert "max-age=0" in [x.strip() for x in r1.headers["cache-control"].split(",")]
+    assert r1a.headers["etag"]
+    assert "max-age=0" in [x.strip() for x in r1a.headers["cache-control"].split(",")]
     assert r2a.headers["etag"]
     assert r2b.headers["etag"]
     assert r2a.headers["etag"] != r2b.headers["etag"]
 
-    assert r1.headers.get("content-encoding", "identity") == "identity"
+    assert r1a.headers.get("content-encoding", "identity") == "identity"
     assert r2a.headers.get("content-encoding", "identity") == "identity"
     assert r2b.headers.get("content-encoding", "identity") == "identity"
 
@@ -82,7 +93,7 @@ def test_make_asset_handler():
     # Now do a request with etag
     r5 = server.get(
         "foo.html",
-        headers={"accept-encoding": "gzip", "if-none-match": r1.headers["etag"]},
+        headers={"accept-encoding": "gzip", "if-none-match": r1a.headers["etag"]},
     )
     r6 = server.get(
         "foo.png",

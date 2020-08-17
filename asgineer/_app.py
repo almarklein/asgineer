@@ -158,13 +158,13 @@ async def _handle_websocket(handler, request):
         # todo: can we remove this?
         try:
             await request.close()
-        except Exception:
+        except Exception:  # pragma: no cover
             pass
 
         # Also clean up
         try:
             await request._destroy()
-        except Exception as err:
+        except Exception as err:  # pragma: no cover
             logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)
 
 
@@ -249,5 +249,5 @@ async def _handle_http(handler, request):
         # Clean up
         try:
             await request._destroy()
-        except Exception as err:
+        except Exception as err:  # pragma: no cover
             logger.error(f"Error in cleanup: {str(err)}", exc_info=err)

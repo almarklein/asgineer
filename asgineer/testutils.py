@@ -27,6 +27,7 @@ testfilename = os.path.join(
 PORT = 49152 + os.getpid() % 16383  # hash pid to ephimeral port number
 URL = f"http://127.0.0.1:{PORT}"
 
+
 # todo: allow running multiple processes at the same time, by including a sequence number
 
 
@@ -488,6 +489,15 @@ class MockTestServer(BaseTestServer):
                     "body": chunk,
                     "more_body": bool(client_to_server),
                 }
+            else:
+                if method == "GET":
+                    # We wait ... this is us mimicking an open connection
+                    await asyncio.sleep(9999)
+                elif method == "PUT":
+                    return {"type": "http.disconnect"}
+                else:
+                    # Let's be a bad server and return None instead
+                    return None
 
         async def send(m):
             if m["type"] == "http.response.start":
@@ -502,7 +512,10 @@ class MockTestServer(BaseTestServer):
 
         response = []
         await self._asgi_app(scope, receive, send)
+        if not response:
+            response.extend([9999, {}])
         response.append(b"".join(server_to_client))
+
         return tuple(response)
 
     async def _co_ws_communicate(self, url, client_co_func, loop):
