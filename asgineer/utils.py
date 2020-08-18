@@ -140,6 +140,11 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         else:
             body = assets[path]
 
+        # The response to a head request should not include a body
+        if request.method == "HEAD":
+            headers["content-length"] = str(len(body))
+            body = b""
+
         # Note that we always return bytes, not a stream-response. The
         # assets used with this utility are assumed to be small-ish,
         # since they are in-memory.

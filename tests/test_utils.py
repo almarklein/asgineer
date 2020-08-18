@@ -54,7 +54,8 @@ def test_make_asset_handler():
     r2b = server.get("foo.png")
 
     assert r1a.status == 200 and r1b.status == 200
-    assert len(r1a.body) == 3 and len(r1a.body) == 3
+    assert len(r1a.body) == 3
+    assert len(r1b.body) == 0  # HEAD's have no body
 
     for r in (r1a, r1b):
         assert r.headers["content-type"] == "text/html"
