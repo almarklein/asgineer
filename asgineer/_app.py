@@ -154,8 +154,14 @@ async def _handle_websocket(handler, request):
 
     finally:
 
-        # The ASGI spec specifies that ASGI servers should close
-        # the ws connection when the task ends.
+        # The ASGI spec specifies that ASGI servers should close the
+        # ws connection when the task ends. At the time of writing
+        # (04-10-2018), only Uvicorn does this. And at 18-08-2020 Daphne
+        # still doesn't. So ... just close for good measure.
+        try:
+            await request.close()
+        except Exception:  # pragma: no cover
+            pass
 
         # Also clean up
         try:
@@ -190,7 +196,9 @@ async def _handle_http(handler, request):
                 except Exception as err:
                     raise ValueError(f"Could not JSON encode body: {err}")
             elif inspect.isasyncgen(body):
-                # todo: deprecate this?
+                # Returning an async generator used to be THE way to do chunked
+                # responses before version 0.8. We keep it for backwards
+                # compatibility, and because it can be quite nice.
                 pass
             else:
                 if inspect.isgenerator(body):

@@ -413,8 +413,6 @@ class WebsocketRequest(BaseRequest):
         await self._send({"type": "websocket.close", "code": code})
         self._app_state = DISCONNECTED
 
-    # todo: implement sleep_while_connected, and wakeup
-
 
 class RequestSet:
     """ A set of request objects that are currenlty active.
