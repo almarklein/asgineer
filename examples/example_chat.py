@@ -1,4 +1,12 @@
 """
+Example chat application using short polling, long polling and SSE.
+
+In this setup, the long-polling and SSE requests are put to sleep,
+and woken up when new data is available.
+
+This approach works well for long polling, but not for websockets.
+See example_ws_chat.py for a similar chat based on websockets. Note that
+SSE could follow a more hybrid approach.
 """
 
 import time
@@ -17,12 +25,10 @@ async def main(request):
         return HTML_TEMPLATE.replace("POLL_METHOD", "long_poll")
     elif request.path == "/sse":
         return HTML_TEMPLATE.replace("POLL_METHOD", "sse")
-    elif request.path == "/websocket":
-        return HTML_TEMPLATE.replace("POLL_METHOD", "websocket")
     elif request.path == "/say":
         message_bytes = await request.get_body(1024)
         await post_new_message(message_bytes.decode())
-        return 200, {}, ""
+        return 200, {}, b""
     elif request.path.startswith("/messages/"):
         return await messages_handler(request)
     else:
@@ -36,53 +42,38 @@ waiting_requests = asgineer.RequestSet()
 async def post_new_message(message):
     messages.append(message)
     messages[:-32] = []
-    await waiting_requests.wakeup_all()
-
-
-# todo: if a new message is say-ed before we enter the sleep, we wont get it.
+    for r in waiting_requests:
+        await r.wakeup()
 
 
 async def messages_handler(request):
     poll_method = request.path.split("/", 2)[-1]
 
     if poll_method == "short_poll":
-        # Short poll: simply respond with the messages
-        # return 200, {}, "<br>".join(messages)
+        # Short poll: simply respond with the messages.
         await request.accept(200, {"content-type": "text/plain"})
         await request.send("<br>".join(messages))
 
     elif poll_method == "long_poll":
-        # Long poll: wait with sending messages until we have new data
-        # return 200, {}, messages_long_poll(request)
+        # Long poll: wait with sending messages until we have new data.
         waiting_requests.add(request)
         await request.accept(200, {"content-type": "text/plain"})
-        await request.sleep_while_connected(10)
+        await request.sleep_while_connected(3)
         await request.send("<br>".join(messages))
 
     elif poll_method == "sse":
-        # Server Side Events: send messages each time we have new data
-        # Also need special headers
+        # Server Side Events: send messages each time we have new data.
+        # Also need special headers.
         waiting_requests.add(request)
         sse_headers = {
             "content-type": "text/event-stream",
             "cache-control": "no-cache",
             "connection": "keep-alive",
         }
-        # return 200, sse_headers, (messages_sse(request), wait_for_disconnect(request))
         await request.accept(200, sse_headers)
         while True:
             await request.sleep_while_connected(10)
             await request.send(f"event: message\ndata: {'<br>'.join(messages)}\n\n")
-
-    elif poll_method == "websocket":
-        # return await messages_websocket(request)
-        assert request.scope["type"] == "websocket", "Expected ws"
-        waiting_requests.add(request)
-        await request.accept()
-        while True:
-            await request.sleep_while_connected(10)
-            await request.send("<br>".join(messages))
-            print("ws", time.time())
 
     else:
         raise ValueError(f"Invalid message handler endpoint: {request.path}")
@@ -123,15 +114,6 @@ async function do_sse() {
     evtSource.addEventListener("message", function(event) { set_text(event.data); });
 }
 
-async function do_websocket() {
-    ws = new WebSocket('ws://' + window.location.host + '/messages/websocket');
-    //var ws = new WebSocket('/messages/websocket');
-    ws.onmessage = function(m) {
-        set_text(m.data);
-    }
-}
-
-
 window.onload = function () {
     // Do a short poll on startup
     do_short_poll();
@@ -144,8 +126,6 @@ window.onload = function () {
         do_long_poll();
     } else if (poll_method == 'sse') {
         do_sse();
-    } else if (poll_method == 'websocket') {
-        do_websocket();
     }
 
     var textinput = document.getElementById("text");
@@ -180,8 +160,7 @@ body, .main, .messages, .userinput { margin: 0; }
     <a href="/short_poll">Short Polling</a><br />
     <a href="/long_poll">Long Polling</a><br />
     <a href="/sse">Server Side Events (SSE)</a><br />
-    <a href="/websocket">Websockets</a><br />
-</a>
+</div>
 
 <div class='main'>
     <div class="messages" id="messages"></div>

@@ -162,9 +162,9 @@ def test_request_set():
     loop = asyncio.get_event_loop()
 
     s1 = asgineer.RequestSet()
-    r1 = asgineer.HttpRequest(None, None, None)
-    r2 = asgineer.HttpRequest(None, None, None)
-    r3 = asgineer.HttpRequest(None, None, None)
+    r1 = asgineer.BaseRequest(None)
+    r2 = asgineer.BaseRequest(None)
+    r3 = asgineer.BaseRequest(None)
 
     s1.add(r1)
     s1.add(r2)
@@ -181,9 +181,6 @@ def test_request_set():
 
     # We only add r3 to s1, otherwise the gc test becomes flaky for some reason
     s1.add(r3)
-
-    # We can do this
-    loop.run_until_complete(s1.wakeup_all())  # ugly version of await ...
 
     assert len(s1) == 3
     assert len(s2) == 2

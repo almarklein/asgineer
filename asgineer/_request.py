@@ -452,10 +452,3 @@ class RequestSet:
         """ Remove all request objects from the set.
         """
         self._s.clear()
-
-    async def wakeup_all(self):
-        """ Wake up all tasks that are waiting for any of the request's
-        ``sleep_while_connected`` coroutine.
-        """
-        for request in self._s:
-            await request.wakeup()

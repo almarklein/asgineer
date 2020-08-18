@@ -31,9 +31,9 @@ async def main(request):
 async def ws_handler(request):
     waiting_requests.add(request)
     while True:
-        message = await request.receive()
+        msg = await request.receive()  # raises DisconnectedError on disconnect
         for r in waiting_requests:
-            await r.send(message)
+            await r.send(msg)
 
 
 HTML_TEMPLATE = """
