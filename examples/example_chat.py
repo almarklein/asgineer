@@ -9,9 +9,6 @@ See example_ws_chat.py for a similar chat based on websockets. Note that
 SSE could follow a more hybrid approach.
 """
 
-import time
-import asyncio
-
 import asgineer
 
 

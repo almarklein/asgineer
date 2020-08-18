@@ -13,7 +13,13 @@ from invoke import task
 
 NAME = "asgineer"
 LIBNAME = NAME.replace("-", "_")
-PY_PATHS = [LIBNAME, "tests", "tasks.py", "setup.py"]  # for linting/formatting
+PY_PATHS = [
+    LIBNAME,
+    "examples",
+    "tests",
+    "tasks.py",
+    "setup.py",
+]
 
 # ----------------------------------------
 

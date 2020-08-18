@@ -223,8 +223,8 @@ class HttpRequest(BaseRequest):
             raise IOError("Cannot send to a closed connection.")
 
     async def sleep_while_connected(self, seconds):
-        """ A method similar to ``asyncio.sleep()``, intended for use in long
-        polling and server side events (SSE):
+        """ Async sleep, wake-able, and only while the connection is active.
+        Intended for use in long polling and server side events (SSE):
 
         * Returns after the given amount of seconds.
         * Returns when the request ``wakeup()`` is called.

@@ -8,9 +8,6 @@ exits. The request is automatically removed from waiting_requests
 (that's the point of RequestSet).
 """
 
-import time
-import asyncio
-
 import asgineer
 
 

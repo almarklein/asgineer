@@ -20,4 +20,4 @@ main = GZipMiddleware(main, minimum_size=1024)
 
 
 if __name__ == "__main__":
-    asgineer.run(f"__main__:main", "uvicorn")
+    asgineer.run("__main__:main", "uvicorn")
