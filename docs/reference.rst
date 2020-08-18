@@ -32,6 +32,7 @@ sets the appropriate headers:
   and the ``content-type`` header defaults to ``text/plain``.
 * A ``dict`` object is JSON-encoded,
   and the ``content-type`` header is set to ``application/json``.
+* An async generator can be provided as an alternative way to send a chunked response.
 
 See :func:`request.accept <asgineer.HttpRequest.accept>` and :func:`request.send <asgineer.HttpRequest.send>`
 for a lower level API (for which the auto-conversion does not apply).
