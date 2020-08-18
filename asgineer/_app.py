@@ -155,14 +155,7 @@ async def _handle_websocket(handler, request):
     finally:
 
         # The ASGI spec specifies that ASGI servers should close
-        # the ws connection when the task ends. At the time of
-        # writing (04-10-2018), only Uvicorn does this.
-        # So ... just close for good measure.
-        # todo: can we remove this?
-        try:
-            await request.close()
-        except Exception:  # pragma: no cover
-            pass
+        # the ws connection when the task ends.
 
         # Also clean up
         try:
