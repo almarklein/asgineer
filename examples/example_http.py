@@ -106,19 +106,12 @@ async def chunks(request):
     but only displays it when done. This e.g. allows streaming large
     files without using large amounts of memory.
     """
-    # Little triage to support both Trio and asyncio based apps
-    import sys
-
-    if "trio" in sys.modules:
-        import trio as aio
-    else:
-        import asyncio as aio
 
     async def iter():
         yield "<html><head></head><body>"
         yield "Here are some chunks dripping in:<br>"
         for i in range(20):
-            await aio.sleep(0.1)
+            await asgineer.sleep(0.1)
             yield "CHUNK <br>"
         yield "</body></html>"
 

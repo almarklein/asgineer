@@ -7,9 +7,14 @@ import hashlib
 import mimetypes
 
 from ._app import normalize_response, guess_content_type_from_body
+from ._compat import sleep
 
-
-__all__ = ["normalize_response", "make_asset_handler", "guess_content_type_from_body"]
+__all__ = [
+    "sleep",
+    "normalize_response",
+    "make_asset_handler",
+    "guess_content_type_from_body",
+]
 
 VIDEO_EXTENSIONS = ".mp4", ".3gp", ".webm"
 
@@ -71,7 +76,8 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
 
     if not isinstance(assets, dict):
         raise TypeError("make_asset_handler() expects a dict of assets")
-    assert isinstance(max_age, int) and max_age >= 0
+    if not (isinstance(max_age, int) and max_age >= 0):  # pragma: no cover
+        raise TypeError("make_asset_handler() max_age must be a positive int")
 
     # Copy the dict, store hashes, prepare zipped data
     assets = dict((key.lower(), val) for (key, val) in assets.items())
@@ -102,7 +108,8 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
             ctypes[key] = guess_content_type_from_body(val)
 
     async def asset_handler(request, path=None):
-        assert request.method in ("GET", "HEAD")
+        if request.method not in ("GET", "HEAD"):
+            return 405, {}, "Method not allowed"
         if path is None:
             path = request.path.lstrip("/")
         path = path.lower()

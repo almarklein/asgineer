@@ -15,12 +15,14 @@ def test_namespace():
 
     assert ns == {
         "BaseRequest",
-        "BaseRequest",
         "HttpRequest",
+        "RequestSet",
         "WebsocketRequest",
+        "DisconnectedError",
         "to_asgi",
         "run",
         "utils",
+        "sleep",
     }
     assert ns == set(asgineer.__all__)
 

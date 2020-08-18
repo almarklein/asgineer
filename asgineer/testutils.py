@@ -27,6 +27,7 @@ testfilename = os.path.join(
 PORT = 49152 + os.getpid() % 16383  # hash pid to ephimeral port number
 URL = f"http://127.0.0.1:{PORT}"
 
+
 # todo: allow running multiple processes at the same time, by including a sequence number
 
 
@@ -136,7 +137,8 @@ class BaseTestServer:
             url = self.url + "/" + path.lstrip("/")
 
         co = self._co_request(method, url, data=data, headers=headers, **kwargs)
-        status, headers, body = self._loop.run_until_complete(co)
+        co_res = self._loop.run_until_complete(co)
+        status, headers, body = co_res
         return Response(status, headers, body)
 
     def ws_communicate(self, path, client_co_func, loop=None):
@@ -487,6 +489,15 @@ class MockTestServer(BaseTestServer):
                     "body": chunk,
                     "more_body": bool(client_to_server),
                 }
+            else:
+                if method == "GET":
+                    # We wait ... this is us mimicking an open connection
+                    await asyncio.sleep(9999)
+                elif method == "PUT":
+                    return {"type": "http.disconnect"}
+                else:
+                    # Let's be a bad server and return None instead
+                    return None
 
         async def send(m):
             if m["type"] == "http.response.start":
@@ -501,7 +512,10 @@ class MockTestServer(BaseTestServer):
 
         response = []
         await self._asgi_app(scope, receive, send)
+        if not response:
+            response.extend([9999, {}])
         response.append(b"".join(server_to_client))
+
         return tuple(response)
 
     async def _co_ws_communicate(self, url, client_co_func, loop):
@@ -526,10 +540,12 @@ class MockTestServer(BaseTestServer):
 
         class WS:
             def __init__(self):
-                self._closed = False
+                self._closed_server = False
                 self._accepted = False
 
             async def send(self, value):
+                if self._closed_server:
+                    raise IOError("ConnectionClosed")
                 if isinstance(value, bytes):
                     m = {"type": "websocket.receive", "bytes": value}
                 elif isinstance(value, str):
@@ -540,14 +556,14 @@ class MockTestServer(BaseTestServer):
 
             async def receive(self):
                 # Wait for message to become available
-                if self._closed:
+                if self._closed_server:
                     raise IOError("WS is closed")
                 while not server_to_client:
                     await asyncio.sleep(0.02)
                 # Get message and handle special cases
                 m = server_to_client.pop(0)
                 if m["type"] in ("websocket.disconnect", "websocket.close"):
-                    self._closed = True
+                    self._closed_server = True
                     raise IOError("WS closed")
                 if m["type"] == "websocket.accept":
                     self._accepted = True
@@ -557,7 +573,6 @@ class MockTestServer(BaseTestServer):
 
             async def close(self):
                 client_to_server.append({"type": "websocket.disconnect"})
-                self._closed = True
 
             async def __aiter__(self):
                 while True:

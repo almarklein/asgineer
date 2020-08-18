@@ -14,7 +14,7 @@ async def main(request):
         f"<h2>request.url</h2>{request.url}",
         f"<h2>request.path</h2>{request.path}",
         f"<h2>request.querydict</h2>{request.querydict}",
-        f"<h2>request.headers</h2>",
+        "<h2>request.headers</h2>",
         "<br>".join(f"{key}: {val!r}" for key, val in request.headers.items()),
         "<br>",
         "</body></html>",

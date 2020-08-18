@@ -9,8 +9,8 @@ Installation
 Asgineer need Python 3.6 or higher. To install or upgrade, run:
 
 .. code-block:: shell
-    
-    $ pip install asgineer --upgrade
+
+    $ pip install -U asgineer
 
 
 Dependencies
