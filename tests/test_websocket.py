@@ -4,6 +4,7 @@ Test behavior for websocket handlers.
 
 import sys
 
+import asgineer
 from common import make_server
 
 
@@ -155,6 +156,34 @@ def test_websocket_receive():
     assert p.out == "{'foo': 3}\n{'bar': 3}"
 
 
+def test_websocket_cannot_send_after_close():
+    async def handle_ws(request):
+        await request.accept()
+        await request.send("foo")  # fine
+        async for m in request.receive_iter():
+            print(m)
+        sys.stdout.flush()
+        await request.send("bar")  # Still fine, even if client closed
+        await request.close()
+        await request.send("spam")  # Not fine, because our side closed
+
+    async def client(ws):
+        messages = []
+        await ws.send("hi")
+        await ws.send("there")
+        await ws.close()
+        async for m in ws:
+            messages.append(m)
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == ["foo", "bar"]
+    assert "hi\nthere" in p.out.strip()
+    assert "Cannot send to an disconnected" in p.out  # DisconnectError is not reported
+
+
 def test_websocket_receive_too_much():
     async def handle_ws1(request):
         await request.accept()
@@ -180,9 +209,46 @@ def test_websocket_receive_too_much():
     with make_server(handle_ws2) as p:
         p.ws_communicate("/", client)
 
-    assert "hellow" in p.out
-    assert "DisconnectedError" in p.out and "ws disconnect" in p.out.lower()
-    assert "KeyError" not in p.out
+    assert "hellow" == p.out  # DisconnectError is not reported
+
+
+def test_websocket_receive_after_close1():
+    async def handle_ws1(request):
+        await request.accept()
+        async for m in request.receive_iter():  # stops at DisconnectedError
+            print(m)
+        await request.receive()
+
+    async def client(ws):
+        await ws.send("hellow")
+        await ws.close()
+
+    with make_server(handle_ws1) as p:
+        p.ws_communicate("/", client)
+
+    assert p.out.strip().startswith("hellow")
+    assert "Cannot receive from ws that already disconnected" in p.out
+
+
+def test_websocket_receive_after_close2():
+    async def handle_ws1(request):
+        await request.accept()
+        try:
+            print(await request.receive())
+            print(await request.receive())
+        except asgineer.DisconnectedError:
+            pass
+        await request.receive()
+
+    async def client(ws):
+        await ws.send("hellow")
+        await ws.close()
+
+    with make_server(handle_ws1) as p:
+        p.ws_communicate("/", client)
+
+    assert p.out.strip().startswith("hellow")
+    assert "Cannot receive from ws that already disconnected" in p.out
 
 
 def test_websocket_send_invalid_data():
@@ -199,11 +265,9 @@ def test_websocket_send_invalid_data():
     assert "TypeError" in p.out
 
 
-def test_websocket_no_accept():
+def test_websocket_no_accept1():
     async def handle_ws(request):
         await request.send("some text")
-        await request.send(b"some bytes")
-        await request.send({"some": "json"})
 
     async def client(ws):
         messages = []
@@ -218,6 +282,96 @@ def test_websocket_no_accept():
 
     assert messages == [] or messages is None  # handshake fails
     assert "Error in websocket handler" in p.out
+    assert "Cannot send before" in p.out
+
+
+def test_websocket_no_accept2():
+    async def handle_ws(request):
+        await request.receive()
+
+    async def client(ws):
+        return []
+
+    with make_server(handle_ws) as p:
+        p.ws_communicate("/", client)
+
+    assert "Error in websocket handler" in p.out
+    assert "Cannot receive before" in p.out
+
+
+def test_websocket_double_accept():
+    async def handle_ws(request):
+        await request.accept()
+        await request.accept()
+        await request.send("some text")
+
+    async def client(ws):
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == [] or messages is None  # handshake fails
+    assert "Error in websocket handler" in p.out
+    assert "Cannot accept" in p.out
+
+
+def test_websocket_accept_while_disconnected1():
+    async def handle_ws(request):
+        await request._receive()  # pop the websocket.connect message
+        await request.accept()
+        await request.send("some text")
+
+    async def client(ws):
+        await ws.close()
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == [] or messages is None  # handshake fails
+    assert not p.out  # DisconnectError is not reported
+
+
+def test_websocket_accept_while_disconnected2():
+    async def handle_ws(request):
+        await request._receive()  # pop the websocket.connect message
+        try:
+            await request.accept()
+        except asgineer.DisconnectedError:
+            print("foobar1")
+        try:
+            await request.accept()
+        except asgineer.DisconnectedError:
+            print("foobar1")
+        await request.send("some text")
+
+    async def client(ws):
+        await ws.close()
+        messages = []
+        async for m in ws:
+            messages.append(m)
+            if m == "CLIENT_CLOSE":
+                break
+        return messages
+
+    with make_server(handle_ws) as p:
+        messages = p.ws_communicate("/", client)
+
+    assert messages == [] or messages is None  # handshake fails
+    assert "foobar1" in p.out
+    assert "foobar2" not in p.out
+    assert "Cannot accept ws that already disconnected" in p.out
 
 
 def test_websocket_should_return_none():

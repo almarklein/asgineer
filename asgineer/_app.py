@@ -145,6 +145,9 @@ async def _handle_websocket(handler, request):
             )
             raise IOError(error_text)
 
+    except DisconnectedError:
+        pass  # Not really an error
+
     except Exception as err:
         error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
         logger.error(error_text, exc_info=err)

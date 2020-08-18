@@ -540,7 +540,7 @@ class MockTestServer(BaseTestServer):
 
         class WS:
             def __init__(self):
-                self._closed = False
+                self._closed_server = False
                 self._accepted = False
 
             async def send(self, value):
@@ -554,14 +554,14 @@ class MockTestServer(BaseTestServer):
 
             async def receive(self):
                 # Wait for message to become available
-                if self._closed:
+                if self._closed_server:
                     raise IOError("WS is closed")
                 while not server_to_client:
                     await asyncio.sleep(0.02)
                 # Get message and handle special cases
                 m = server_to_client.pop(0)
                 if m["type"] in ("websocket.disconnect", "websocket.close"):
-                    self._closed = True
+                    self._closed_server = True
                     raise IOError("WS closed")
                 if m["type"] == "websocket.accept":
                     self._accepted = True
@@ -571,7 +571,6 @@ class MockTestServer(BaseTestServer):
 
             async def close(self):
                 client_to_server.append({"type": "websocket.disconnect"})
-                self._closed = True
 
             async def __aiter__(self):
                 while True:
