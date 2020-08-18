@@ -132,44 +132,6 @@ async def _handle_lifespan(receive, send):
             logger.warning(f"Unknown lifespan message {message['type']}")
 
 
-async def _handle_websocket(handler, request):
-
-    try:
-
-        result = await handler(request)
-
-        if result is not None:
-            error_text = (
-                "A websocket handler should return None; "
-                + "use request.send() and request.receive() to communicate."
-            )
-            raise IOError(error_text)
-
-    except DisconnectedError:
-        pass  # Not really an error
-
-    except Exception as err:
-        error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
-        logger.error(error_text, exc_info=err)
-
-    finally:
-
-        # The ASGI spec specifies that ASGI servers should close the
-        # ws connection when the task ends. At the time of writing
-        # (04-10-2018), only Uvicorn does this. And at 18-08-2020 Daphne
-        # still doesn't. So ... just close for good measure.
-        try:
-            await request.close()
-        except Exception:  # pragma: no cover
-            pass
-
-        # Also clean up
-        try:
-            await request._destroy()
-        except Exception as err:  # pragma: no cover
-            logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)
-
-
 async def _handle_http(handler, request):
 
     try:
@@ -257,3 +219,41 @@ async def _handle_http(handler, request):
             await request._destroy()
         except Exception as err:  # pragma: no cover
             logger.error(f"Error in cleanup: {str(err)}", exc_info=err)
+
+
+async def _handle_websocket(handler, request):
+
+    try:
+
+        result = await handler(request)
+
+        if result is not None:
+            error_text = (
+                "A websocket handler should return None; "
+                + "use request.send() and request.receive() to communicate."
+            )
+            raise IOError(error_text)
+
+    except DisconnectedError:
+        pass  # Not really an error
+
+    except Exception as err:
+        error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
+        logger.error(error_text, exc_info=err)
+
+    finally:
+
+        # The ASGI spec specifies that ASGI servers should close the
+        # ws connection when the task ends. At the time of writing
+        # (04-10-2018), only Uvicorn does this. And at 18-08-2020 Daphne
+        # still doesn't. So ... just close for good measure.
+        try:
+            await request.close()
+        except Exception:  # pragma: no cover
+            pass
+
+        # Also clean up
+        try:
+            await request._destroy()
+        except Exception as err:  # pragma: no cover
+            logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)

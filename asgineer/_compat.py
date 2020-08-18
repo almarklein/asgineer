@@ -1,3 +1,9 @@
+"""
+This module provides compatibility for different async libs. Currently
+only supporting asyncio, but should not be too hard to add e.g. Trio,
+once Uvicorn has Trio support.
+"""
+
 import asyncio
 
 
