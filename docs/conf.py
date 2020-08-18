@@ -26,7 +26,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Asgineer"
-copyright = "2018-2019, Almar Klein"
+copyright = "2018-2020, Almar Klein"
 author = "Almar Klein"
 
 # The short X.Y version.

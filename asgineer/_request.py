@@ -18,7 +18,8 @@ DISCONNECTED = 3
 
 class DisconnectedError(IOError):
     """ An error raised when the connection is disconnected by the client.
-    Subclass of IOError.
+    Subclass of IOError. You don't need to catch these - it is considered
+    ok for a handler to exit by this.
     """
 
 

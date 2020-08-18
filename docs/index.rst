@@ -16,12 +16,14 @@ More precisely, Asgineer is a (thin) Python ASGI web microframework.
 
 Cool stuff:
 
-* Since Asgineer does not depend on ``asyncio``, it can be used with alternative
-  async libs like `Trio <https://github.com/python-trio/trio>`_.
 * When running on `Uvicorn <https://github.com/encode/uvicorn>`_, Asgineer is one
   of the fastest web frameworks available.
+* Asgineer has great support for chunked responses, long polling, server
+  side events (SSE), and websockets.
+* Asgineer has utilities to help you serve your assets the right (and fast) way.
 * You can write your web app with Asgineer, and switch the underlying (ASGI) server
   without having to change your code.
+* Great test coverage.
 * Asgineer is so small that it fits in the palm of your hand!
 
 

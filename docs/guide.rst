@@ -18,6 +18,26 @@ Here's an example web application written with Asgineer:
         return f"<html>You requested <b>{request.path}</b></html>"
 
 
+Responses are return values
+===========================
+
+An HTTP response consists of three things: an integer
+`status code <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_,
+a dictionary of `headers <https://en.wikipedia.org/wiki/List_of_HTTP_header_fields>`_,
+and the response `body <https://en.wikipedia.org/wiki/HTTP_message_body>`_.
+
+In the above example, Asgineer sets the appropriate status code and
+headers so that the browser will render the result as a web page. In the
+:doc:`reference docs <reference>` the rules are explained.
+
+You can also provide both headers and body, or all three values:
+
+.. code-block:: python
+
+   async def main(request):
+        return 200, {}, f"<html>You requested <b>{request.path}</b></html>"
+
+
 Running the application
 =======================
 
@@ -80,19 +100,43 @@ sub-handlers:
         path = request.path.split('/api/')[-1]
         return {'path', path}
 
-For the common task of serving assets, Asgineer provides an easy way to this
+For the common task of serving assets, Asgineer provides an easy way to do this
 correct and fast, with :func:`.make_asset_handler`.
+
+
+A lower level way to send responses 
+===================================
+
+The initial example can also be written using lower level mechanics. Note that
+Asgineer does not automatically set headers in this case:
+
+.. code-block:: python
+
+   async def main(request):
+        await request.accept(200, {"content-type": "text/html"})
+        await request.send("<html>You requested {request.path}</html>")
+
+This approach is intended for connections with a longer lifetime, such as
+chuncked responses, long polling, and server-side events (SSE).
+E.g. a chuncked response:
+    
+.. code-block:: python
+
+   async def main(request):
+        await request.accept(200, {"content-type": "text/plain"})
+        async for chunk in some_generator():
+            await request.send(chunk)
+
 
 Websockets
 ==========
 
-Websocket handlers are written in a similar way, except that they should
-not return a response. Instead, the request object can be used
-to send and receive messages:
+Websocket handlers are written in a similar way:
 
 .. code-block:: python
     
     async def websocket_handler(request):
+        await request.accept()
         
         # Wait for one message, which can be str or bytes
         m = await request.receive()
@@ -104,7 +148,7 @@ to send and receive messages:
         async for msg in request.receive_iter():
             await msg.send('echo ' + str(msg))
         
-        # Note: the websocket connection is closed when the handler returns
+        # Note: the connection is automatically closed when the handler returns
 
 
 ----

@@ -7,7 +7,7 @@ from ._request import RequestSet, DisconnectedError
 from ._app import to_asgi
 from ._run import run
 from . import utils
-from ._compat import sleep
+from .utils import sleep
 
 
 __all__ = [
