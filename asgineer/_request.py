@@ -354,13 +354,15 @@ class WebsocketRequest(BaseRequest):
             message = {"type": "websocket.send", "bytes": encoded}
         else:
             raise TypeError(f"Can only send bytes/str/dict over ws, not {type(data)}")
-        # Send it
-        if self._app_state == CONNECTED:
+        # Send it. In contrast to http, we cannot send after the client closed.
+        if self._client_state == DISCONNECTED:
+            raise IOError("Cannot send to a disconnected ws.")
+        elif self._app_state == CONNECTED:
             await self._send(message)
         elif self._app_state == CONNECTING:
             raise IOError("Cannot send before calling accept on ws.")
         else:
-            raise IOError("Cannot send to an disconnected ws.")
+            raise IOError("Cannot send to a closed ws.")
 
     async def receive(self):
         """ Async function to receive one websocket message. The result can be

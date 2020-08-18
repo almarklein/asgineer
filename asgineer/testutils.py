@@ -544,6 +544,8 @@ class MockTestServer(BaseTestServer):
                 self._accepted = False
 
             async def send(self, value):
+                if self._closed_server:
+                    raise IOError("ConnectionClosed")
                 if isinstance(value, bytes):
                     m = {"type": "websocket.receive", "bytes": value}
                 elif isinstance(value, str):

@@ -246,6 +246,8 @@ async def _handle_http(handler, request):
         if request._app_state == _request.CONNECTING:
             await request.accept(500, {})
             await request.send(error_text, more=False)
+        elif request._app_state == _request.CONNECTED:
+            await request.send(b"", more=False)  # At least close it
 
     finally:
 
