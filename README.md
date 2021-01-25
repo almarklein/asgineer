@@ -20,6 +20,8 @@ it is one of the fastest web frameworks available. It supports http
 long polling, server side events (SSE), and websockets. And has utilities
 to serve assets the right (and fast) way.
 
+Asgineer is proudly used to serve e.g. https://pyzo.org and https://timetagger.app.
+
 
 ## Example
 
