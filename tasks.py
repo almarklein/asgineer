@@ -30,8 +30,7 @@ if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
 
 @task
 def tests(ctx, server="mock", cover=False):
-    """ Perform unit tests. Use --cover to open a webbrowser to show coverage.
-    """
+    """Perform unit tests. Use --cover to open a webbrowser to show coverage."""
     import pytest  # noqa
 
     test_path = "tests"
@@ -49,8 +48,7 @@ def tests(ctx, server="mock", cover=False):
 
 @task
 def lint(ctx):
-    """ Validate the code style (e.g. undefined names)
-    """
+    """Validate the code style (e.g. undefined names)"""
     try:
         importlib.import_module("flake8")
     except ImportError:
@@ -68,21 +66,18 @@ def lint(ctx):
 
 @task
 def checkformat(ctx):
-    """ Check whether the code adheres to the style rules. Use autoformat to fix.
-    """
+    """Check whether the code adheres to the style rules. Use autoformat to fix."""
     black_wrapper(False)
 
 
 @task
 def autoformat(ctx):
-    """ Automatically format the code (using black).
-    """
+    """Automatically format the code (using black)."""
     black_wrapper(True)
 
 
 def black_wrapper(writeback):
-    """ Helper function to invoke black programatically.
-    """
+    """Helper function to invoke black programatically."""
 
     check = [] if writeback else ["--check"]
     exclude = "|".join(["cangivefilenameshere"])
@@ -95,8 +90,7 @@ def black_wrapper(writeback):
 
 @task
 def clean(ctx):
-    """ Clean the repo of temp files etc.
-    """
+    """Clean the repo of temp files etc."""
     for root, dirs, files in os.walk(ROOT_DIR):
         for dname in dirs:
             if dname in (
@@ -131,8 +125,7 @@ DOC_BUILD_DIR = os.path.join(ROOT_DIR, "docs", "_build")
     )
 )
 def docs(ctx, clean=False, build=False, show=False, **kwargs):
-    """ make API documentation
-    """
+    """make API documentation"""
     # Prepare
 
     if not (clean or build or show):

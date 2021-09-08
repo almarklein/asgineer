@@ -11,8 +11,7 @@ from common import get_backend, make_server
 
 
 def test_backend_reporter(capsys=None):
-    """ A stub test to display the used backend.
-    """
+    """A stub test to display the used backend."""
     msg = f"  Running tests with ASGI server: {get_backend()}"
     if capsys:
         with capsys.disabled():

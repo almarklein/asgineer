@@ -8,7 +8,7 @@ import asyncio
 
 
 async def sleep(seconds):
-    """ An async sleep function. Uses asyncio. Can be extended to support Trio
+    """An async sleep function. Uses asyncio. Can be extended to support Trio
     once we support that.
     """
 
@@ -20,7 +20,7 @@ Event = asyncio.Event
 
 
 async def wait_for_any_then_cancel_the_rest(*coroutines):
-    """ Wait for any of the given coroutines to complete (or fail), and then
+    """Wait for any of the given coroutines to complete (or fail), and then
     cancels all the other co-routines.
     """
     # Note: ensure_future == create_task. Less readable, but py36 compatible.

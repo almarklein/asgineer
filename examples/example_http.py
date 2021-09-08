@@ -47,13 +47,12 @@ async def main(request):
 
 
 async def bytes_handler(request):
-    """ Returning bytes; a response in its purest form.
-    """
+    """Returning bytes; a response in its purest form."""
     return b"x" * 42
 
 
 async def text_handler(request):
-    """ Returning a string causes the content-type to default to text/plain.
+    """Returning a string causes the content-type to default to text/plain.
     Note that the main handler also returns a string, but gets a text/html
     content-type because it starts with "<!DOCTYPE html>" or "<html>".
     """
@@ -61,7 +60,7 @@ async def text_handler(request):
 
 
 async def json_api(request):
-    """ Returning a dict will cause the content-type to default to
+    """Returning a dict will cause the content-type to default to
     application/json.
     """
     return {
@@ -73,7 +72,7 @@ async def json_api(request):
 
 
 async def redirect(request):
-    """ Handler to do redirects using HTTP status code 307.
+    """Handler to do redirects using HTTP status code 307.
     The url to redirect to must be given with a query parameter:
     http://localhost/redirect?url=http://example.com
     """
@@ -85,8 +84,7 @@ async def redirect(request):
 
 
 async def error1(request):
-    """ Handler with a deliberate error.
-    """
+    """Handler with a deliberate error."""
 
     def foo():
         1 / 0
@@ -95,13 +93,12 @@ async def error1(request):
 
 
 async def error2(request):
-    """ Handler with a deliberate wrong result.
-    """
+    """Handler with a deliberate wrong result."""
     return 400, "ho"
 
 
 async def chunks(request):
-    """ A handler that sends chunks at a slow pace.
+    """A handler that sends chunks at a slow pace.
     The browser will download the page over the range of 2 seconds,
     but only displays it when done. This e.g. allows streaming large
     files without using large amounts of memory.

@@ -26,20 +26,20 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     content-type header, sending compressed responses when
     possible/sensible, and applying appropriate HTTP caching (using
     etag and cache-control headers). Usage:
-    
+
     .. code-block:: python
-    
+
         assets = ... # a dict mapping filenames to asset bodies (str/bytes)
-        
+
         asset_handler = make_asset_handler(assets)
-        
+
         async def some_handler(request):
             path = request.path.lstrip("/")
             return await asset_handler(request, path)
-    
-    
+
+
     Parameters for ``make_asset_handler()``:
-    
+
     * ``assets (dict)``: The assets to serve. The keys represent "file names"
       and must be str. The values must be bytes or str.
     * ``max_age (int)``: The maximum age of the assets. This is used as a hint
@@ -48,15 +48,15 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
       set higher for assets that hardly ever change (e.g. images and fonts).
     * ``min_compress_size (int)``: The minimum size of the body for compressing
       an asset. Default 256.
-    
+
     Parameters for the handler:
-    
+
     * ``request (Request)``: The Asgineer request object (for the request headers).
     * ``path (str)``: A key in the asset dictionary. Case insensitive.
       If not given or None, ``request.path.lstrip("/")`` is used.
-    
+
     Handler behavior:
-    
+
     * If the given path is not present in the asset dict (case insensitive),
       a 404-not-found response is returned.
     * The ``etag`` header is set to a (sha256) hash of the body of the asset.
