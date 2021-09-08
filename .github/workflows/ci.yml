@@ -3,12 +3,12 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - master
     tags:
       - 'v*'
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
 
@@ -100,3 +100,13 @@ jobs:
       run: |
           pip install -U pytest pytest-cov requests websockets
           pip install .
+    - name: Install ASGI framework (${{ matrix.ASGI_SERVER }})
+      if: ${{ matrix.ASGI_SERVER != 'mock' }}
+      run: |
+          pip install -U ${{ matrix.ASGI_SERVER }}
+    - name: Unit tests
+      env:
+          ASGI_SERVER: ${{ matrix.ASGI_SERVER }}
+      run: |
+          cd tests
+          pytest -v --cov=asgineer --cov-report=term-missing .
