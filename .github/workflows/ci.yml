@@ -77,15 +77,15 @@ jobs:
             pyversion: '3.9'
             ASGI_SERVER: 'mock'
           #
-          - name: Test Linux py39
+          - name: Test Linux uvicorn
             os: ubuntu-latest
             pyversion: '3.9'
             ASGI_SERVER: 'uvicorn'
-          - name: Test Linux py39
+          - name: Test Linux hypercorn
             os: ubuntu-latest
             pyversion: '3.9'
             ASGI_SERVER: 'hypercorn'
-          - name: Test Linux py39
+          - name: Test Linux daphne
             os: ubuntu-latest
             pyversion: '3.9'
             ASGI_SERVER: 'daphne'

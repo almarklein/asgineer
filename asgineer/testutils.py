@@ -315,7 +315,7 @@ class ProcessTestServer(BaseTestServer):
         import websockets
 
         try:
-            ws = await websockets.client.connect(url)
+            ws = await websockets.connect(url)
         except websockets.InvalidStatusCode:
             return None
         ws.receive = ws.recv
