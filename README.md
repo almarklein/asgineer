@@ -1,7 +1,7 @@
 # Asgineer
 A really thin ASGI web framework 🐍🤘
 
-[![Build Status](https://api.travis-ci.org/almarklein/asgineer.svg)](https://travis-ci.org/almarklein/asgineer)
+[![Build Status](https://github.com/almarklein/asgineer/workflows/CI/badge.svg)](https://github.com/almarklein/asgineer/actions)
 [![Documentation Status](https://readthedocs.org/projects/asgineer/badge/?version=latest)](https://asgineer.readthedocs.io/?badge=latest)
 [![Package Version](https://badge.fury.io/py/asgineer.svg)](https://pypi.org/project/asgineer)
 
