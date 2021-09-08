@@ -32,7 +32,7 @@ URL = f"http://127.0.0.1:{PORT}"
 
 
 class BaseTestServer:
-    """ Base class for test servers. Objects of this class represent an ASGI
+    """Base class for test servers. Objects of this class represent an ASGI
     server instance that can be used to test your server implementation.
 
     The ``app`` object passed to the constructor can be an ASGI application
@@ -58,19 +58,17 @@ class BaseTestServer:
 
     @property
     def app(self):
-        """ The application object that was given at instantiation.
-        """
+        """The application object that was given at instantiation."""
         return self._app
 
     @property
     def url(self):
-        """ The url at which the server is listening.
-        """
+        """The url at which the server is listening."""
         return URL
 
     @property
     def out(self):
-        """ The stdout / stderr of the server. This gets set when the
+        """The stdout / stderr of the server. This gets set when the
         with-statement using this object exits.
         """
         return self._out
@@ -99,27 +97,23 @@ class BaseTestServer:
             self.log(self.out)
 
     def get(self, path, data=None, headers=None, **kwargs):
-        """ Send a GET request to the server. See request() for detais.
-        """
+        """Send a GET request to the server. See request() for detais."""
         return self.request("GET", path, data=data, headers=headers, **kwargs)
 
     def put(self, path, data=None, headers=None, **kwargs):
-        """ Send a PUT request to the server. See request() for detais.
-        """
+        """Send a PUT request to the server. See request() for detais."""
         return self.request("PUT", path, data=data, headers=headers, **kwargs)
 
     def post(self, path, data=None, headers=None, **kwargs):
-        """ Send a POST request to the server. See request() for detais.
-        """
+        """Send a POST request to the server. See request() for detais."""
         return self.request("POST", path, data=data, headers=headers, **kwargs)
 
     def delete(self, path, data=None, headers=None, **kwargs):
-        """ Send a DELETE request to the server. See request() for detais.
-        """
+        """Send a DELETE request to the server. See request() for detais."""
         return self.request("DELETE", path, data=data, headers=headers, **kwargs)
 
     def request(self, method, path, data=None, headers=None, **kwargs):
-        """ Send a request to the server. Returns a named tuple ``(status, headers, body)``.
+        """Send a request to the server. Returns a named tuple ``(status, headers, body)``.
 
         Arguments:
             method (str): the HTTP method (e.g. "GET")
@@ -142,7 +136,7 @@ class BaseTestServer:
         return Response(status, headers, body)
 
     def ws_communicate(self, path, client_co_func, loop=None):
-        """ Do a websocket request and communicate over the connection.
+        """Do a websocket request and communicate over the connection.
 
         The ``client_co_func`` object must be an async function, it receives
         a ws object as an argument, which has methods ``send``, ``receive`` and
@@ -155,15 +149,13 @@ class BaseTestServer:
         return loop.run_until_complete(co)
 
     def log(self, *messages, sep=" ", end="\n"):
-        """ Log a message. Overloadable. Default write to stdout.
-        """
+        """Log a message. Overloadable. Default write to stdout."""
         msg = sep.join(str(m) for m in messages)
         self._stdout_write(msg + end)
         self._stdout_flush()
 
     def filter_lines(self, lines):
-        """ Overloadable line filter.
-        """
+        """Overloadable line filter."""
         return lines
 
 
@@ -213,7 +205,7 @@ def load_module(name, filename):
 
 
 class ProcessTestServer(BaseTestServer):
-    """ Subclass of BaseTestServer that runs an actual server in a
+    """Subclass of BaseTestServer that runs an actual server in a
     subprocess. The ``server`` argument must be a server supported by
     Asgineer' ``run()`` function, like "uvicorn", "hypercorn" or "daphne".
 
@@ -323,7 +315,7 @@ class ProcessTestServer(BaseTestServer):
         import websockets
 
         try:
-            ws = await websockets.client.connect(url)
+            ws = await websockets.connect(url)
         except websockets.InvalidStatusCode:
             return None
         ws.receive = ws.recv
@@ -333,7 +325,7 @@ class ProcessTestServer(BaseTestServer):
 
 
 class MockTestServer(BaseTestServer):
-    """ Subclass of BaseTestServer that mocks an ASGI server and
+    """Subclass of BaseTestServer that mocks an ASGI server and
     operates in-process. This is a less realistic approach, but faster
     and allows tracking test coverage, so it's more suited for unit
     tests.

@@ -24,7 +24,7 @@ logger.addHandler(_handler)
 
 
 def normalize_response(response):
-    """ Normalize the given response, by always returning a 3-element tuple
+    """Normalize the given response, by always returning a 3-element tuple
     (status, headers, body). The body is not "resolved"; it is safe
     to call this function multiple times on the same response.
     """
@@ -52,7 +52,7 @@ def normalize_response(response):
 
 
 def guess_content_type_from_body(body):
-    """ Guess the content-type based of the body.
+    """Guess the content-type based of the body.
 
     * "text/html" for str bodies starting with ``<!DOCTYPE html>`` or ``<html>``.
     * "text/plain" for other str bodies.
@@ -71,7 +71,7 @@ def guess_content_type_from_body(body):
 
 
 def to_asgi(handler):
-    """ Convert a request handler (a coroutine function) to an ASGI
+    """Convert a request handler (a coroutine function) to an ASGI
     application, which can be served with an ASGI server, such as
     Uvicorn, Hypercorn, Daphne, etc.
     """

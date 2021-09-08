@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  lint-build:
+    name: Linting
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dev dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install -U black pyflakes
+    - name: Black
+      run: |
+          black --check .
+    - name: Flake
+      run: |
+          pyflakes .
+
+  docs-build:
+    name: Docs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dev dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install -U sphinx
+    - name: Build docs
+      run: |
+          sphinx-build docs docs/_build;
+
+  test-builds:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Test Linux py36
+            os: ubuntu-latest
+            pyversion: '3.6'
+            ASGI_SERVER: 'mock'
+          - name: Test Linux py37
+            os: ubuntu-latest
+            pyversion: '3.7'
+            ASGI_SERVER: 'mock'
+          - name: Test Linux py38
+            os: ubuntu-latest
+            pyversion: '3.8'
+            ASGI_SERVER: 'mock'
+          - name: Test Linux py39
+            os: ubuntu-latest
+            pyversion: '3.9'
+            ASGI_SERVER: 'mock'
+          #
+          - name: Test Linux uvicorn
+            os: ubuntu-latest
+            pyversion: '3.9'
+            ASGI_SERVER: 'uvicorn'
+          - name: Test Linux daphne
+            os: ubuntu-latest
+            pyversion: '3.9'
+            ASGI_SERVER: 'daphne'
+          #- name: Test Linux hypercorn - does not work with our test mechanics
+          #  os: ubuntu-latest
+          #  pyversion: '3.9'
+          #  ASGI_SERVER: 'hypercorn'
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.pyversion }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.pyversion }}
+    - name: Install dev dependencies
+      run: |
+          pip install -U pytest pytest-cov requests websockets
+          pip install .
+    - name: Install ASGI framework (${{ matrix.ASGI_SERVER }})
+      if: ${{ matrix.ASGI_SERVER != 'mock' }}
+      run: |
+          pip install -U ${{ matrix.ASGI_SERVER }}
+    - name: Unit tests
+      env:
+          ASGI_SERVER: ${{ matrix.ASGI_SERVER }}
+      run: |
+          cd tests
+          pytest -v --cov=asgineer --cov-report=term-missing .

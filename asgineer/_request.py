@@ -17,14 +17,14 @@ DISCONNECTED = 3
 
 
 class DisconnectedError(IOError):
-    """ An error raised when the connection is disconnected by the client.
+    """An error raised when the connection is disconnected by the client.
     Subclass of IOError. You don't need to catch these - it is considered
     ok for a handler to exit by this.
     """
 
 
 class BaseRequest:
-    """ Base request class, defining the properties to get access to
+    """Base request class, defining the properties to get access to
     the request metadata.
     """
 
@@ -37,8 +37,7 @@ class BaseRequest:
         self._request_sets = set()
 
     async def _destroy(self):
-        """ Method to be used internally to perform cleanup.
-        """
+        """Method to be used internally to perform cleanup."""
         for s in self._request_sets:
             try:
                 s.discard(self)
@@ -48,7 +47,7 @@ class BaseRequest:
 
     @property
     def scope(self):
-        """ A dict representing the raw ASGI scope. See the
+        """A dict representing the raw ASGI scope. See the
         `ASGI reference <https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope>`_
         for details.
         """
@@ -56,13 +55,12 @@ class BaseRequest:
 
     @property
     def method(self):
-        """ The HTTP method (string). E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'.
-        """
+        """The HTTP method (string). E.g. 'HEAD', 'GET', 'PUT', 'POST', 'DELETE'."""
         return self._scope["method"]
 
     @property
     def headers(self):
-        """ A dictionary representing the headers. Both keys and values are
+        """A dictionary representing the headers. Both keys and values are
         lowercase strings.
         """
         # We can assume the headers to be made lowercase by h11/httptools/etc. right?
@@ -74,7 +72,7 @@ class BaseRequest:
 
     @property
     def url(self):
-        """ The full (unquoted) url, composed of scheme, host, port,
+        """The full (unquoted) url, composed of scheme, host, port,
         path, and query parameters (string).
         """
         url = f"{self.scheme}://{self.host}:{self.port}{self.path}"
@@ -84,13 +82,12 @@ class BaseRequest:
 
     @property
     def scheme(self):
-        """ The URL scheme (string). E.g. 'http' or 'https'.
-        """
+        """The URL scheme (string). E.g. 'http' or 'https'."""
         return self._scope["scheme"]
 
     @property
     def host(self):
-        """ he requested host name, taken from the Host header,
+        """he requested host name, taken from the Host header,
         or ``scope['server'][0]`` if there is not Host header.
         See also ``scope['server']`` and ``scope['client']``.
         """
@@ -98,22 +95,19 @@ class BaseRequest:
 
     @property
     def port(self):
-        """ The server's port (integer).
-        """
+        """The server's port (integer)."""
         return self._scope["server"][1]
 
     @property
     def path(self):
-        """ The path part of the URL (a string, with percent escapes decoded).
-        """
+        """The path part of the URL (a string, with percent escapes decoded)."""
         return (
             self._scope.get("root_path", "") + self._scope["path"]
         )  # is percent-decoded
 
     @property
     def querylist(self):
-        """ A list with ``(key, value)`` tuples, representing the URL query parameters.
-        """
+        """A list with ``(key, value)`` tuples, representing the URL query parameters."""
         if self._querylist is None:
             q = self._scope["query_string"]  # bytes, not percent decoded
             self._querylist = parse_qsl(q.decode())
@@ -121,13 +115,12 @@ class BaseRequest:
 
     @property
     def querydict(self):
-        """ A dictionary representing the URL query parameters.
-        """
+        """A dictionary representing the URL query parameters."""
         return dict(self.querylist)
 
 
 class HttpRequest(BaseRequest):
-    """ Subclass of BaseRequest to represent an HTTP request. An object
+    """Subclass of BaseRequest to represent an HTTP request. An object
     of this class is passed to the request handler.
     """
 
@@ -150,7 +143,7 @@ class HttpRequest(BaseRequest):
         self._wakeup_event = None
 
     async def accept(self, status=200, headers={}):
-        """ Accept this http request. Sends the status code and headers.
+        """Accept this http request. Sends the status code and headers.
 
         In Asgineer, a response can be provided in two ways. The simpler
         (preferred) way is to let the handler return status, headers
@@ -182,7 +175,7 @@ class HttpRequest(BaseRequest):
         await self._send(msg)
 
     async def _receive_chunk(self):
-        """ Receive a chunk of data, returning a bytes object.
+        """Receive a chunk of data, returning a bytes object.
         Raises ``DisconnectedError`` when the connection is closed.
         """
         # Check status
@@ -203,7 +196,7 @@ class HttpRequest(BaseRequest):
             raise IOError(f"Unexpected message type: {mt}")
 
     async def send(self, data, more=True):
-        """ Send (a chunk of) data, representing the response. Note that
+        """Send (a chunk of) data, representing the response. Note that
         ``accept()`` must be called first. See ``accept()`` for details.
         """
         # Compose message
@@ -224,7 +217,7 @@ class HttpRequest(BaseRequest):
             raise IOError("Cannot send to a closed connection.")
 
     async def sleep_while_connected(self, seconds):
-        """ Async sleep, wake-able, and only while the connection is active.
+        """Async sleep, wake-able, and only while the connection is active.
         Intended for use in long polling and server side events (SSE):
 
         * Returns after the given amount of seconds.
@@ -238,14 +231,15 @@ class HttpRequest(BaseRequest):
             self._wakeup_event = Event()
         self._wakeup_event.clear()
         await wait_for_any_then_cancel_the_rest(
-            sleep(seconds), self._wakeup_event.wait(), self._receive_until_disconnect(),
+            sleep(seconds),
+            self._wakeup_event.wait(),
+            self._receive_until_disconnect(),
         )
         if self._client_state == DISCONNECTED:
             raise DisconnectedError()  # see _receive_until_disconnect
 
     async def _receive_until_disconnect(self):
-        """ Keep receiving until the client disconnects.
-        """
+        """Keep receiving until the client disconnects."""
         while True:
             try:
                 await self._receive_chunk()
@@ -253,13 +247,12 @@ class HttpRequest(BaseRequest):
                 break  # will re-raise in sleep_while_connected
 
     async def wakeup(self):
-        """ Awake any tasks that are waiting in ``sleep_while_connected()``.
-        """
+        """Awake any tasks that are waiting in ``sleep_while_connected()``."""
         if self._wakeup_event is not None:
             self._wakeup_event.set()
 
     async def iter_body(self):
-        """ Async generator that iterates over the chunks in the body.
+        """Async generator that iterates over the chunks in the body.
         During iteration you should probably take measures to avoid excessive
         memory usage to prevent server vulnerabilities.
         Raises ``DisconnectedError`` when the connection is closed.
@@ -275,7 +268,7 @@ class HttpRequest(BaseRequest):
                 break
 
     async def get_body(self, limit=10 * 2 ** 20):
-        """ Async function to get the bytes of the body.
+        """Async function to get the bytes of the body.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an ``IOError``.
         """
@@ -292,7 +285,7 @@ class HttpRequest(BaseRequest):
         return self._body
 
     async def get_json(self, limit=10 * 2 ** 20):
-        """ Async function to get the body as a dict.
+        """Async function to get the body as a dict.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an ``IOError``.
         """
@@ -301,7 +294,7 @@ class HttpRequest(BaseRequest):
 
 
 class WebsocketRequest(BaseRequest):
-    """ Subclass of BaseRequest to represent a websocket request. An
+    """Subclass of BaseRequest to represent a websocket request. An
     object of this class is passed to the request handler.
     """
 
@@ -316,7 +309,7 @@ class WebsocketRequest(BaseRequest):
         self._app_state = CONNECTING  # CONNECTING -> CONNECTED -> DISCONNECTED
 
     async def accept(self, subprotocol=None):
-        """ Async function to accept the websocket connection.
+        """Async function to accept the websocket connection.
         This needs to be called before any sending or receiving.
         Raises ``DisconnectedError`` when the client closed the connection.
         """
@@ -341,7 +334,7 @@ class WebsocketRequest(BaseRequest):
             raise IOError("Cannot accept an already accepted ws connection.")
 
     async def send(self, data):
-        """ Async function to send a websocket message. The value can
+        """Async function to send a websocket message. The value can
         be ``bytes``, ``str`` or ``dict``. In the latter case, the message is
         encoded with JSON (and UTF-8).
         """
@@ -366,7 +359,7 @@ class WebsocketRequest(BaseRequest):
             raise IOError("Cannot send to a closed ws.")
 
     async def receive(self):
-        """ Async function to receive one websocket message. The result can be
+        """Async function to receive one websocket message. The result can be
         ``bytes`` or ``str`` (depending on how it was sent).
         Raises ``DisconnectedError`` when the client closed the connection.
         """
@@ -388,7 +381,7 @@ class WebsocketRequest(BaseRequest):
             raise IOError(f"Unexpected ws message type {mt}")
 
     async def receive_iter(self):
-        """ Async generator to iterate over incoming messages as long
+        """Async generator to iterate over incoming messages as long
         as the connection is not closed. Each message can be a ``bytes`` or ``str``.
         """
         while True:
@@ -399,7 +392,7 @@ class WebsocketRequest(BaseRequest):
                 break
 
     async def receive_json(self):
-        """ Async convenience function to receive a JSON message. Works
+        """Async convenience function to receive a JSON message. Works
         on binary as well as text messages, as long as its JSON encoded.
         Raises ``DisconnectedError`` when the client closed the connection.
         """
@@ -409,14 +402,13 @@ class WebsocketRequest(BaseRequest):
         return json.loads(result)
 
     async def close(self, code=1000):
-        """ Async function to close the websocket connection.
-        """
+        """Async function to close the websocket connection."""
         await self._send({"type": "websocket.close", "code": code})
         self._app_state = DISCONNECTED
 
 
 class RequestSet:
-    """ A set of request objects that are currenlty active.
+    """A set of request objects that are currenlty active.
 
     This class can help manage long-lived connections such as with long
     polling, SSE or websockets. All requests in as set can easily be
@@ -434,20 +426,18 @@ class RequestSet:
         return iter(self._s)
 
     def add(self, request):
-        """ Add a request object to the set.
-        """
+        """Add a request object to the set."""
         if not isinstance(request, BaseRequest):
             raise TypeError("RequestSet can only contain request objects.")
         request._request_sets.add(self)
         self._s.add(request)
 
     def discard(self, request):
-        """ Remove the given request object from the set.
+        """Remove the given request object from the set.
         If not present, it is ignored.
         """
         self._s.discard(request)
 
     def clear(self):
-        """ Remove all request objects from the set.
-        """
+        """Remove all request objects from the set."""
         self._s.clear()
