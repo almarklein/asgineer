@@ -75,30 +75,46 @@ sub-handlers:
 .. code-block:: python
 
     import asgineer
-    
+
+    ASSETS = {
+        'main.js': (
+            b"console.log('Hello from asgineer!')",
+            'application/javascript'
+        )
+    }
+
+
     @asgineer.to_asgi
     async def main(request):
         path = request.path
         if path == '/':
-            return f"<html>Index page</html>"
+            return (
+                "<html>"
+                '  <script src="/assets/main.js"></script>'
+                "  Index page"
+                "</html>"
+            )
         elif path.startswith('/assets/'):
             return await asset_handler(request)
         elif path.startswith('/api/'):
             return await api_handler(request)
         else:
             return 404, {}, 'Page not found'
-    
+
+
     async def asset_handler(request):
         fname = request.path.split('/assets/')[-1]
         if fname in ASSETS:
-            body, content_type = ASEETS[fname]
-            return {'content type': content_type}, body
+            body, content_type = ASSETS[fname]
+            return {'content-type': content_type}, body
         else:
             return 404, {}, 'asset not found'
-    
+
+
     async def api_handler(request):
         path = request.path.split('/api/')[-1]
-        return {'path', path}
+        return {'path': path}
+
 
 For the common task of serving assets, Asgineer provides an easy way to do this
 correct and fast, with :func:`.make_asset_handler`.
