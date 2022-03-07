@@ -267,7 +267,7 @@ class HttpRequest(BaseRequest):
             if self._client_state != CONNECTED:  # i.e. DONE or DISCONNECTED
                 break
 
-    async def get_body(self, limit=10 * 2 ** 20):
+    async def get_body(self, limit=10 * 2**20):
         """Async function to get the bytes of the body.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an ``IOError``.
@@ -284,7 +284,7 @@ class HttpRequest(BaseRequest):
             self._body = b"".join(chunks)
         return self._body
 
-    async def get_json(self, limit=10 * 2 ** 20):
+    async def get_json(self, limit=10 * 2**20):
         """Async function to get the body as a dict.
         If the end of the stream is not reached before the byte limit
         is reached (default 10MiB), raises an ``IOError``.
