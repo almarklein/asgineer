@@ -232,7 +232,7 @@ def test_websocket_receive_too_much():
 
 
 def test_websocket_receive_after_close():
-    if get_backend() != "daphne":
+    if get_backend() == "daphne":
         skip("This test outcome is ill defined, skipping for daphne")
 
     async def handle_ws1(request):
@@ -296,7 +296,7 @@ def test_websocket_receive_after_disconnect2():
 
 
 def test_websocket_send_invalid_data():
-    if get_backend() != "daphne":
+    if get_backend() == "daphne":
         skip("Skipping on daphne because it errors on the close mechanic")
 
     async def handle_ws(request):
