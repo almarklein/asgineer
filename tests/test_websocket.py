@@ -5,7 +5,8 @@ Test behavior for websocket handlers.
 import sys
 
 import asgineer
-from common import make_server
+from common import make_server, get_backend
+from pytest import skip
 
 
 def test_websocket1():
@@ -231,6 +232,9 @@ def test_websocket_receive_too_much():
 
 
 def test_websocket_receive_after_close():
+    if get_backend() != "daphne":
+        skip("This test outcome is ill defined, skipping for daphne")
+
     async def handle_ws1(request):
         await request.accept()
         await request.close()
@@ -242,11 +246,12 @@ def test_websocket_receive_after_close():
 
     with make_server(handle_ws1) as p:
         p.ws_communicate("/", client)
+    out = p.out.strip()
 
-    # Acually, uvicorn gives empty string, daphne gives hello, not sure
+    # Acually, uvicorn gives empty string, daphne gives error, not sure
     # what the official behavior is, I guess we'll allow both.
-    print("receive_after_close:", p.out.strip())
-    assert p.out.strip() in ("", "hellow")
+    print("receive_after_close:", out)
+    assert out in ("", "hellow")
 
 
 def test_websocket_receive_after_disconnect1():
@@ -291,6 +296,9 @@ def test_websocket_receive_after_disconnect2():
 
 
 def test_websocket_send_invalid_data():
+    if get_backend() != "daphne":
+        skip("Skipping on daphne because it errors on the close mechanic")
+
     async def handle_ws(request):
         await request.accept()
         await request.send(4)
