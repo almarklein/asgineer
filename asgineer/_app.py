@@ -146,7 +146,8 @@ async def _handle_http(handler, request):
             status, headers, body = normalize_response(result)
             # Make sure that there is a content type
             if "content-type" not in headers:
-                headers["content-type"] = guess_content_type_from_body(body)
+                if body != b"":
+                    headers["content-type"] = guess_content_type_from_body(body)
             # Convert the body
             if isinstance(body, bytes):
                 pass
@@ -175,7 +176,8 @@ async def _handle_http(handler, request):
             # the content-length, the server sets Transfer-Encoding to chunked.
             if isinstance(body, bytes):
                 where = "sending response"
-                headers.setdefault("content-length", str(len(body)))
+                if body != b"":
+                    headers.setdefault("content-length", str(len(body)))
                 await request.accept(status, headers)
                 await request.send(body, more=False)
             else:

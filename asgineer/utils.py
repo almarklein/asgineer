@@ -79,6 +79,14 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     if not (isinstance(max_age, int) and max_age >= 0):  # pragma: no cover
         raise TypeError("make_asset_handler() max_age must be a positive int")
 
+    def to_bytes(val):
+        if isinstance(val, bytes):
+            return val
+        elif isinstance(val, str):
+            return val.encode()
+        else:
+            raise ValueError("Asset bodies must be bytes or str.")
+
     # Copy the dict, store hashes, prepare zipped data
     assets = dict((key.lower(), val) for (key, val) in assets.items())
     hashes = {}
@@ -86,12 +94,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     ctypes = {}
     for key, val in assets.items():
         # Get binary body
-        if isinstance(val, bytes):
-            bbody = val
-        elif isinstance(val, str):
-            bbody = val.encode()
-        else:
-            raise ValueError("Asset bodies must be str or bytes.")
+        bbody = to_bytes(val)
         # Store hash
         hashes[key] = hashlib.sha256(bbody).hexdigest()
         # Store zipped version if it makes sense
@@ -118,16 +121,12 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         if path not in assets:
             return 404, {}, "404 not found"
 
-        content_etag = hashes.get(path, None)
+        content_etag = f"\"{hashes.get(path, None)}\""
         request_etag = request.headers.get("if-none-match", None)
         headers = {
             "etag": content_etag,
             "cache-control": f"public, must-revalidate, max-age={max_age:d}",
         }
-
-        # If client already has the exact asset, send confirmation now
-        if request_etag and request_etag == content_etag:
-            return 304, headers, b""
 
         # Set content type
         if path in ctypes:
@@ -138,12 +137,17 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
             headers["content-encoding"] = "gzip"
             body = zipped[path]
         else:
-            body = assets[path]
+            body = to_bytes(assets[path])
+
+        headers["content-length"] = str(len(body))
+
+        # If client already has the exact asset, send confirmation now
+        if request_etag and request_etag == content_etag:
+            return 304, headers, b""
 
         # The response to a head request should not include a body
         if request.method == "HEAD":
-            headers["content-length"] = str(len(body))
-            body = b""
+            return 200, headers, b""
 
         # Note that we always return bytes, not a stream-response. The
         # assets used with this utility are assumed to be small-ish,
