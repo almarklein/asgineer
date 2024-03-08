@@ -79,79 +79,82 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
     if not (isinstance(max_age, int) and max_age >= 0):  # pragma: no cover
         raise TypeError("make_asset_handler() max_age must be a positive int")
 
-    def to_bytes(val):
-        if isinstance(val, bytes):
-            return val
-        elif isinstance(val, str):
-            return val.encode()
-        else:
-            raise ValueError("Asset bodies must be bytes or str.")
-
-    # Copy the dict, store hashes, prepare zipped data
-    assets = dict((key.lower(), val) for (key, val) in assets.items())
-    hashes = {}
+    # Store etags, prepare unzipped/zipped bodies, store ctypes
+    etags = {}
+    unzipped = {}
     zipped = {}
     ctypes = {}
-    for key, val in assets.items():
+    for path, body in assets.items():
+        # Get lowercase path
+        lpath = path.lower()
         # Get binary body
-        bbody = to_bytes(val)
-        # Store hash
-        hashes[key] = hashlib.sha256(bbody).hexdigest()
-        # Store zipped version if it makes sense
+        if isinstance(body, bytes):
+            bbody = body
+        elif isinstance(body, str):
+            bbody = body.encode()
+        else:
+            raise ValueError("Asset bodies must be bytes or str.")
+        # Store etag
+        etags[lpath] = hashlib.sha256(bbody).hexdigest()
+        # Store unzipped body
+        unzipped[lpath] = bbody
+        # Store zipped body if it makes sense
         if len(bbody) >= min_compress_size:
-            if not key.endswith(VIDEO_EXTENSIONS):
+            if not lpath.endswith(VIDEO_EXTENSIONS):
                 bbody_zipped = gzip.compress(bbody)
                 if len(bbody_zipped) < 0.90 * len(bbody):
-                    zipped[key] = bbody_zipped
-        # Store mimetype
-        ctype, enc = mimetypes.guess_type(key)
+                    zipped[lpath] = bbody_zipped
+        # Store ctype
+        ctype, _ = mimetypes.guess_type(lpath)
         if ctype:
-            ctypes[key] = ctype
+            ctypes[lpath] = ctype
         else:
-            ctypes[key] = guess_content_type_from_body(val)
+            ctypes[lpath] = guess_content_type_from_body(body)
 
     async def asset_handler(request, path=None):
         if request.method not in ("GET", "HEAD"):
             return 405, {}, "Method not allowed"
+
         if path is None:
             path = request.path.lstrip("/")
         path = path.lower()
 
-        # Exit early on 404
-        if path not in assets:
-            return 404, {}, "404 not found"
+        if path not in unzipped:
+            return 404, {}, "File not found"
 
-        content_etag = f"\"{hashes.get(path, None)}\""
-        request_etag = request.headers.get("if-none-match", None)
-        headers = {
-            "etag": content_etag,
-            "cache-control": f"public, must-revalidate, max-age={max_age:d}",
-        }
+        assert path in etags
+        assert path in ctypes
 
-        # Set content type
-        if path in ctypes:
-            headers["content-type"] = ctypes[path]
+        status = 200
+        headers = {}
+        headers["cache-control"] = f"public, must-revalidate, max-age={max_age:d}"
+        headers["content-length"] = str(len(unzipped[path]))
+        headers["content-type"] = ctypes[path]
+        headers["etag"] = f"\"{etags[path]}\""
+        body = unzipped[path]
 
         # Get body, zip if we should and can
         if path in zipped and "gzip" in request.headers.get("accept-encoding", ""):
             headers["content-encoding"] = "gzip"
+            headers["content-length"] = str(len(zipped[path]))
             body = zipped[path]
-        else:
-            body = to_bytes(assets[path])
-
-        headers["content-length"] = str(len(body))
 
         # If client already has the exact asset, send confirmation now
-        if request_etag and request_etag == content_etag:
-            return 304, headers, b""
+        if request.headers.get("if-none-match") == headers["etag"]:
+            status = 304
+            # https://www.rfc-editor.org/rfc/rfc7232#section-4.1
+            headers.pop("content-encoding", None)
+            headers.pop("content-length", None)
+            headers.pop("content-type", None)
+            body = b""
 
         # The response to a head request should not include a body
         if request.method == "HEAD":
-            return 200, headers, b""
+            body = b""
 
         # Note that we always return bytes, not a stream-response. The
         # assets used with this utility are assumed to be small-ish,
         # since they are in-memory.
-        return 200, headers, body
+        return status, headers, body
 
     return asset_handler
