@@ -126,27 +126,27 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         assert path in ctypes
 
         status = 200
+        body = unzipped[path]
         headers = {}
         headers["cache-control"] = f"public, must-revalidate, max-age={max_age:d}"
-        headers["content-length"] = str(len(unzipped[path]))
+        headers["content-length"] = str(len(body))
         headers["content-type"] = ctypes[path]
         headers["etag"] = f"\"{etags[path]}\""
-        body = unzipped[path]
 
         # Get body, zip if we should and can
-        if path in zipped and "gzip" in request.headers.get("accept-encoding", ""):
-            headers["content-encoding"] = "gzip"
-            headers["content-length"] = str(len(zipped[path]))
+        if "gzip" in request.headers.get("accept-encoding", "") and path in zipped:
             body = zipped[path]
+            headers["content-encoding"] = "gzip"
+            headers["content-length"] = str(len(body))
 
         # If client already has the exact asset, send confirmation now
         if request.headers.get("if-none-match") == headers["etag"]:
             status = 304
+            body = b""
             # https://www.rfc-editor.org/rfc/rfc7232#section-4.1
             headers.pop("content-encoding", None)
             headers.pop("content-length", None)
             headers.pop("content-type", None)
-            body = b""
 
         # The response to a head request should not include a body
         if request.method == "HEAD":
