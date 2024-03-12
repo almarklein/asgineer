@@ -131,7 +131,7 @@ def make_asset_handler(assets, max_age=0, min_compress_size=256):
         headers["cache-control"] = f"public, must-revalidate, max-age={max_age:d}"
         headers["content-length"] = str(len(body))
         headers["content-type"] = ctypes[path]
-        headers["etag"] = f"\"{etags[path]}\""
+        headers["etag"] = f'"{etags[path]}"'
 
         # Get body, zip if we should and can
         if "gzip" in request.headers.get("accept-encoding", "") and path in zipped:
