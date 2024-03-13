@@ -140,12 +140,25 @@ async def _handle_http(handler, request):
         where = "request handler"
         result = await handler(request)
 
+        def _response_has_body(
+            request, response_status, response_headers, response_body
+        ):
+            # https://www.rfc-editor.org/rfc/rfc7230#section-3.3
+            if request.method == "HEAD":
+                return False
+            if (100 <= response_status <= 199) or response_status in [204, 304]:
+                return False
+            return True
+
         if request._app_state == _request.CONNECTING:
             # Process the handler output
             where = "processing handler output"
             status, headers, body = normalize_response(result)
             # Make sure that there is a content type
-            if "content-type" not in headers:
+            if (
+                _response_has_body(request, status, headers, body)
+                and "content-type" not in headers
+            ):
                 headers["content-type"] = guess_content_type_from_body(body)
             # Convert the body
             if isinstance(body, bytes):
@@ -175,7 +188,11 @@ async def _handle_http(handler, request):
             # the content-length, the server sets Transfer-Encoding to chunked.
             if isinstance(body, bytes):
                 where = "sending response"
-                headers.setdefault("content-length", str(len(body)))
+                if (
+                    _response_has_body(request, status, headers, body)
+                    and "content-length" not in headers
+                ):
+                    headers["content-length"] = str(len(body))
                 await request.accept(status, headers)
                 await request.send(body, more=False)
             else:
