@@ -78,7 +78,7 @@ def test_normal_usage():
     refheaders = {"content-type", "content-length", "xx-foo"}
     ignoreheaders = {"connection"}
     if get_backend() not in "daphne":
-        refheaders.update({"server", "date"})
+        ignoreheaders.update({"server", "date"})
     assert headers.difference(ignoreheaders) == refheaders
     assert res.headers["content-type"] == "text/plain"
     assert res.headers["content-length"] == "3"  # yes, a string

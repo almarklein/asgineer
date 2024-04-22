@@ -34,6 +34,7 @@ def filter_lines(lines):
         "Task was destroyed but",
         "task: <Task pending coro",
         "[INFO ",
+        "Aborted!",
     )
     return [line for line in lines if not line.startswith(skip)]
 
