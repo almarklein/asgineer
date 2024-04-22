@@ -75,10 +75,8 @@ def test_normal_usage():
 
     # Daphne capitalizes the header keys, hypercorn aims at lowercase
     headers = set(k.lower() for k in res.headers.keys())
-    refheaders = {"content-type", "content-length", "xx-foo"}
-    ignoreheaders = {"connection"}
-    if get_backend() not in "daphne":
-        refheaders.update({"server", "date"})
+    refheaders = {"content-type", "content-length", "server", "xx-foo"}
+    ignoreheaders = {"connection", "date"}  # "optional"
     assert headers.difference(ignoreheaders) == refheaders
     assert res.headers["content-type"] == "text/plain"
     assert res.headers["content-length"] == "3"  # yes, a string
