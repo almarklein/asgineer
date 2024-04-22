@@ -36,7 +36,7 @@ def filter_lines(lines):
         "[INFO ",
         "Aborted!",
     )
-    return [line for line in lines if not line.startswith(skip)]
+    return [line for line in lines if line and not line.startswith(skip)]
 
 
 def make_server(app):
