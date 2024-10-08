@@ -26,7 +26,9 @@ def run(app, server, bind="localhost:8080", **kwargs):
     # Check server and bind
     assert isinstance(server, str), "asgineer.run() server arg must be a string."
     assert isinstance(bind, str), "asgineer.run() bind arg must be a string."
-    assert ":" in bind, "asgineer.run() bind arg must be 'host:port'"
+    assert ":" in bind, (
+        "asgineer.run() bind arg must be 'host:port'" + "or unix:/path/to/unixsocket"
+    )
     bind = bind.replace("localhost", "127.0.0.1")
 
     # Select server function
@@ -54,7 +56,9 @@ def _run_hypercorn(appname, bind, **kwargs):
 def _run_uvicorn(appname, bind, **kwargs):
     from uvicorn.main import main
 
-    if ":" in bind:
+    if bind.startswith("unix:/"):
+        kwargs["uds"] = bind[5:]
+    elif ":" in bind:
         host, _, port = bind.partition(":")
         kwargs["host"] = host
         kwargs["port"] = port
@@ -71,7 +75,9 @@ def _run_uvicorn(appname, bind, **kwargs):
 def _run_daphne(appname, bind, **kwargs):
     from daphne.cli import CommandLineInterface
 
-    if ":" in bind:
+    if bind.startswith("unix:/"):
+        kwargs["u"] = bind[5:]
+    elif ":" in bind:
         host, _, port = bind.partition(":")
         kwargs["bind"] = host
         kwargs["port"] = port
