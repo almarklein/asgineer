@@ -106,7 +106,7 @@ jobs:
         python-version: ${{ matrix.pyversion }}
     - name: Install dev dependencies
       run: |
-          pip install -U pytest pytest-cov requests websockets
+          pip install -U pytest pytest-cov requests websockets uvicorn hypercorn daphne
           pip install .
     - name: Install ASGI framework (${{ matrix.ASGI_SERVER }})
       if: ${{ matrix.ASGI_SERVER != 'mock' }}
