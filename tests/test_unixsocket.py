@@ -2,10 +2,7 @@ import subprocess
 import tempfile
 import socket
 import time
-import os
 from pathlib import Path
-
-from common import get_backend
 
 HTTP_REQUEST = (
     "GET / HTTP/1.1\r\n" + "Host: example.com\r\n" + "Connection: close\r\n\r\n"
