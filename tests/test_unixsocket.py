@@ -15,7 +15,6 @@ def test_unixsocket():
             socket_location = f"{temp_folder}/socket"
             main_location = f"{temp_folder}/main.py"
             project_location = Path(__file__).parent.parent.absolute()
-            print(project_location)
             code_to_run = "\n".join(
                 [
                     "# this allows us not to install asgineer and still import it",
