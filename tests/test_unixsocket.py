@@ -53,7 +53,9 @@ def test_unixsocket():
 
                     response = client.recv(1024).decode()
 
-                    if "200" not in response:
+                    if "200" in response:
+                        break
+                    else:
                         raise RuntimeError("Unexpected response")
                 except Exception as e:
                     print(repr(e))
