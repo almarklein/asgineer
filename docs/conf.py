@@ -26,7 +26,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Asgineer"
-copyright = "2018-2020, Almar Klein"
+copyright = "2018-2024, Almar Klein"
 author = "Almar Klein"
 
 # The short X.Y version.
@@ -41,7 +41,8 @@ todo_include_todos = False
 
 # -- Options for HTML output ----------------------------------------------
 
-# html_theme = 'alabaster'
+if not (os.getenv("READTHEDOCS") or os.getenv("CI")):
+    html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
