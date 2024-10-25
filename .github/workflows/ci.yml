@@ -60,10 +60,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Test Linux py37
-            os: ubuntu-latest
-            pyversion: '3.7'
-            ASGI_SERVER: 'mock'
           - name: Test Linux py38
             os: ubuntu-latest
             pyversion: '3.8'
@@ -106,7 +102,7 @@ jobs:
         python-version: ${{ matrix.pyversion }}
     - name: Install dev dependencies
       run: |
-          pip install -U pytest pytest-cov requests websockets
+          pip install -U pytest pytest-cov requests websockets uvicorn hypercorn daphne
           pip install .
     - name: Install ASGI framework (${{ matrix.ASGI_SERVER }})
       if: ${{ matrix.ASGI_SERVER != 'mock' }}

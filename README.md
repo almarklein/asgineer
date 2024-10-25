@@ -60,7 +60,7 @@ needs an ASGI server to run on, like
 
 ## Development
 
-Extra dev dependencies: `pip install invoke pytest pytest-cov black flake8 requests websockets`
+Extra dev dependencies: `pip install invoke pytest pytest-cov black flake8 requests websockets uvicorn hypercorn daphne`
 
 Run `invoke -l` to get a list of dev commands, e.g.:
 
