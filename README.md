@@ -46,7 +46,7 @@ $ uvicorn example:main --host=localhost --port=8080
 
 ## Installation and dependencies
 
-Asgineer needs Python 3.6 or higher. To install or upgrade, run:
+Asgineer needs Python 3.8 or higher (may work on older versions but is not tested). To install or upgrade, run:
 ```
 $ pip install -U asgineer
 ```
@@ -60,7 +60,7 @@ needs an ASGI server to run on, like
 
 ## Development
 
-Extra dev dependencies: `pip install invoke pytest pytest-cov black flake8 requests websockets uvicorn hypercorn daphne`
+Install with `pip install -e .[dev]`.
 
 Run `invoke -l` to get a list of dev commands, e.g.:
 

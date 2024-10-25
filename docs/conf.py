@@ -26,7 +26,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Asgineer"
-copyright = "2018-2020, Almar Klein"
+copyright = "2018-2024, Almar Klein"
 author = "Almar Klein"
 
 # The short X.Y version.
@@ -34,14 +34,14 @@ version = ".".join(asgineer.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = asgineer.__version__
 
-language = None
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "default"
 todo_include_todos = False
 
 # -- Options for HTML output ----------------------------------------------
 
-# html_theme = 'alabaster'
+if not (os.getenv("READTHEDOCS") or os.getenv("CI")):
+    html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

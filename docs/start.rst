@@ -6,7 +6,7 @@ Getting started
 Installation
 ============
 
-Asgineer need Python 3.6 or higher. To install or upgrade, run:
+To install or upgrade, run:
 
 .. code-block:: shell
 

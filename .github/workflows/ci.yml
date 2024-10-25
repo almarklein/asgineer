@@ -3,12 +3,12 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - 'v*'
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
 
@@ -79,6 +79,10 @@ jobs:
           - name: Test Linux py312
             os: ubuntu-latest
             pyversion: '3.12'
+            ASGI_SERVER: 'mock'
+          - name: Test Linux py313
+            os: ubuntu-latest
+            pyversion: '3.13'
             ASGI_SERVER: 'mock'
           #
           - name: Test Linux uvicorn
