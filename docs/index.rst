@@ -36,4 +36,4 @@ Cool stuff:
     reference
     testutils
     asgi
-    Examples ↪<https://github.com/almarklein/asgineer/tree/master/examples>
+    Examples ↪<https://github.com/almarklein/asgineer/tree/main/examples>
