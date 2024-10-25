@@ -34,7 +34,6 @@ version = ".".join(asgineer.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = asgineer.__version__
 
-language = None
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "default"
 todo_include_todos = False
