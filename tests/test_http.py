@@ -58,7 +58,6 @@ async def handler7(request):
 
 
 def test_normal_usage():
-
     # Test normal usage
 
     with make_server(handler1) as p:
@@ -103,7 +102,6 @@ def test_normal_usage():
 
 
 def test_output_shapes():
-
     # Singleton arg
 
     with make_server(handler4) as p:
@@ -139,7 +137,6 @@ def test_output_shapes():
 
 
 def test_body_types():
-
     # Plain text
 
     async def handler_text(request):
@@ -207,7 +204,6 @@ def test_body_types():
 
 
 def test_chunking():
-
     # Write
 
     async def handler_chunkwrite1(request):
@@ -268,7 +264,6 @@ def test_chunking():
 
 
 def test_chunking_fails():
-
     # Write fail - cannot be regular generator
 
     async def handler_chunkwrite_fail1(request):
@@ -401,7 +396,6 @@ async def handler_err4(request):
 
 
 def test_errors():
-
     # Explicit error
 
     with make_server(handler_err1) as p:
@@ -495,7 +489,6 @@ async def handler_output13(request):
 
 
 def test_wrong_output():
-
     with make_server(handler_output1) as p:
         res = p.get("/")
 
@@ -663,7 +656,6 @@ async def handler_wrong_use2(request):
 
 
 def test_wrong_use():
-
     with pytest.raises(TypeError):
         asgineer.to_asgi(handler_wrong_use1)
 

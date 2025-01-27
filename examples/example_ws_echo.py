@@ -35,7 +35,6 @@ window.onload = function() {
 
 @asgineer.to_asgi
 async def main(request):
-
     if not request.path.rstrip("/"):
         return index  # Asgineer sets the text/html content type
     elif request.path.startswith("/ws"):

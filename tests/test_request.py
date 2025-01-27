@@ -21,7 +21,6 @@ async def handle_request_object1(request):
 
 
 def test_request_object():
-
     with make_server(handle_request_object1) as p:
         res = p.post("/xx/yy?arg=3&arg=4", b'{"foo": 42}')
 

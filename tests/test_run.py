@@ -11,7 +11,6 @@ async def handler(request):
 
 
 def test_run():
-
     with pytest.raises(ValueError) as err:
         asgineer.run("foo", "nonexistingserver")
     assert "full path" in str(err).lower()

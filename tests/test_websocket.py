@@ -10,7 +10,6 @@ from pytest import skip
 
 
 def test_websocket1():
-
     # Send messages from server to client
 
     async def handle_ws(request):
@@ -58,7 +57,6 @@ def test_websocket1():
 
 
 def test_websocket2():
-
     # Send messages from client to server
 
     async def handle_ws(request):
@@ -414,7 +412,6 @@ def test_websocket_accept_while_disconnected2():
 
 
 def test_websocket_should_return_none():
-
     # Returning a value, even if the rest of the request is ok will
     # make the server log an error.
 

@@ -92,7 +92,6 @@ def to_asgi(handler):
 
 
 async def asgineer_application(handler, scope, receive, send):
-
     # server_version = scope["asgi"].get("version", "2.0")
     # spec_version = scope["asgi"].get("spec_version", "2.0")
 
@@ -133,9 +132,7 @@ async def _handle_lifespan(receive, send):
 
 
 async def _handle_http(handler, request):
-
     try:
-
         # Call request handler to get the result
         where = "request handler"
         result = await handler(request)
@@ -230,7 +227,6 @@ async def _handle_http(handler, request):
             await request.send(b"", more=False)  # At least close it
 
     finally:
-
         # Clean up
         try:
             await request._destroy()
@@ -239,9 +235,7 @@ async def _handle_http(handler, request):
 
 
 async def _handle_websocket(handler, request):
-
     try:
-
         result = await handler(request)
 
         if result is not None:
@@ -259,7 +253,6 @@ async def _handle_websocket(handler, request):
         logger.error(error_text, exc_info=err)
 
     finally:
-
         # The ASGI spec specifies that ASGI servers should close the
         # ws connection when the task ends. At the time of writing
         # (04-10-2018), only Uvicorn does this. And at 18-08-2020 Daphne
