@@ -28,7 +28,7 @@ class BaseRequest:
     the request metadata.
     """
 
-    __slots__ = ("__weakref__", "_scope", "_headers", "_querylist", "_request_sets")
+    __slots__ = ("__weakref__", "_headers", "_querylist", "_request_sets", "_scope")
 
     def __init__(self, scope):
         self._scope = scope
@@ -125,11 +125,11 @@ class HttpRequest(BaseRequest):
     """
 
     __slots__ = (
-        "_receive",
-        "_send",
-        "_client_state",
         "_app_state",
         "_body",
+        "_client_state",
+        "_receive",
+        "_send",
         "_wakeup_event",
     )
 
@@ -298,7 +298,7 @@ class WebsocketRequest(BaseRequest):
     object of this class is passed to the request handler.
     """
 
-    __slots__ = ("_receive", "_send", "_client_state", "_app_state")
+    __slots__ = ("_app_state", "_client_state", "_receive", "_send")
 
     def __init__(self, scope, receive, send):
         assert scope["type"] == "websocket", f"Unexpected ws scope type {scope['type']}"

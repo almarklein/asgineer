@@ -100,7 +100,7 @@ def test_stream5():
         await request.accept(200, sse_headers)
         for i in range(10):
             await request.sleep_while_connected(0.1)
-            await request.send(f"event: message\ndata:{str(i)}\n\n")
+            await request.send(f"event: message\ndata:{i!s}\n\n")
 
     with make_server(stream_handler) as p:
         res = p.get("/")

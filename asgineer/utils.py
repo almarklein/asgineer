@@ -10,10 +10,10 @@ from ._app import normalize_response, guess_content_type_from_body
 from ._compat import sleep
 
 __all__ = [
-    "sleep",
-    "normalize_response",
-    "make_asset_handler",
     "guess_content_type_from_body",
+    "make_asset_handler",
+    "normalize_response",
+    "sleep",
 ]
 
 VIDEO_EXTENSIONS = ".mp4", ".3gp", ".webm"

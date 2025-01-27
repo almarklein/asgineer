@@ -30,7 +30,7 @@ if not os.path.isdir(os.path.join(ROOT_DIR, LIBNAME)):
 @task
 def tests(ctx, server="mock", cover=False):
     """Perform unit tests. Use --cover to open a webbrowser to show coverage."""
-    import pytest  # noqa
+    import pytest
 
     test_path = "tests"
     os.environ["ASGI_SERVER"] = server

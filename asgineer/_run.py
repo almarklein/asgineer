@@ -49,7 +49,7 @@ def _run_hypercorn(appname, bind, **kwargs):
 
     kwargs["bind"] = bind
 
-    args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
+    args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
     return main(args + [appname])
 
 
@@ -68,7 +68,7 @@ def _run_uvicorn(appname, bind, **kwargs):
     # Default to an error log_level, otherwise uvicorn is quite verbose
     kwargs.setdefault("log_level", "warning")
 
-    args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
+    args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
     return main(args + [appname])
 
 
@@ -88,7 +88,7 @@ def _run_daphne(appname, bind, **kwargs):
     # levelmap = {"error": 0, "warn": 0, "warning": 0, "info": 1, "debug": 2}
     kwargs.setdefault("verbosity", 0)
 
-    args = [f"--{key.replace('_', '-')}={str(val)}" for key, val in kwargs.items()]
+    args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
     return CommandLineInterface().run(args + [appname])
 
 

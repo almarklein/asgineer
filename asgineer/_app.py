@@ -218,7 +218,7 @@ async def _handle_http(handler, request):
 
     except Exception as err:
         # Process errors. We log them, and if possible send a 500
-        error_text = f"{type(err).__name__} in {where}: {str(err)}"
+        error_text = f"{type(err).__name__} in {where}: {err!s}"
         logger.error(error_text, exc_info=err)
         if request._app_state == _request.CONNECTING:
             await request.accept(500, {})
@@ -231,7 +231,7 @@ async def _handle_http(handler, request):
         try:
             await request._destroy()
         except Exception as err:  # pragma: no cover
-            logger.error(f"Error in cleanup: {str(err)}", exc_info=err)
+            logger.error(f"Error in cleanup: {err!s}", exc_info=err)
 
 
 async def _handle_websocket(handler, request):
@@ -249,7 +249,7 @@ async def _handle_websocket(handler, request):
         pass  # Not really an error
 
     except Exception as err:
-        error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
+        error_text = f"{type(err).__name__} in websocket handler: {err!s}"
         logger.error(error_text, exc_info=err)
 
     finally:
@@ -266,4 +266,4 @@ async def _handle_websocket(handler, request):
         try:
             await request._destroy()
         except Exception as err:  # pragma: no cover
-            logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)
+            logger.error(f"Error in ws cleanup: {err!s}", exc_info=err)
