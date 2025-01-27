@@ -40,4 +40,6 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "B", "RUF"]
-ignore = []
+ignore = [
+    "E501",  # Line too long
+]

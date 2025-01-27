@@ -287,7 +287,7 @@ class ProcessTestServer(BaseTestServer):
         # Ask process to stop
         self._delfile()
         # Force it to stop if needed
-        for i in range(5):
+        for _ in range(5):
             etime = time.time() + 5
             while self._p.poll() is None and time.time() < etime:
                 time.sleep(0.01)

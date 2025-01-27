@@ -166,7 +166,7 @@ async def _handle_http(handler, request):
                 try:
                     body = json.dumps(body).encode()
                 except Exception as err:
-                    raise ValueError(f"Could not JSON encode body: {err}")
+                    raise ValueError(f"Could not JSON encode body: {err}") from None
             elif inspect.isasyncgen(body):
                 # Returning an async generator used to be THE way to do chunked
                 # responses before version 0.8. We keep it for backwards

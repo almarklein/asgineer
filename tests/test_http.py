@@ -298,11 +298,10 @@ def test_chunking_fails():
     # Read fail - cannot iter twice
 
     async def handler_chunkfail3(request):
-        async for chunk in request.iter_body():
+        async for _chunk in request.iter_body():
             pass
-        async for chunk in request.iter_body():
+        async for _chunk in request.iter_body():
             pass
-        chunk
         return "ok"
 
     with make_server(handler_chunkfail3) as p:
@@ -335,9 +334,8 @@ def test_chunking_fails():
             await request.sleep_while_connected(1.0)
         except asgineer.DisconnectedError:
             pass
-        async for chunk in request.iter_body():
+        async for _chunk in request.iter_body():
             pass
-        chunk
         return "ok"
 
     if get_backend() == "mock":

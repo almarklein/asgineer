@@ -35,7 +35,7 @@ def run(app, server, bind="localhost:8080", **kwargs):
     try:
         func = SERVERS[server.lower()]
     except KeyError:
-        raise ValueError(f"Invalid server specified: {server!r}")
+        raise ValueError(f"Invalid server specified: {server!r}") from None
 
     # Delegate
     return func(appname, bind, **kwargs)
@@ -50,7 +50,7 @@ def _run_hypercorn(appname, bind, **kwargs):
     kwargs["bind"] = bind
 
     args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
-    return main(args + [appname])
+    return main([*args, appname])
 
 
 def _run_uvicorn(appname, bind, **kwargs):
@@ -69,7 +69,7 @@ def _run_uvicorn(appname, bind, **kwargs):
     kwargs.setdefault("log_level", "warning")
 
     args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
-    return main(args + [appname])
+    return main([*args, appname])
 
 
 def _run_daphne(appname, bind, **kwargs):
@@ -89,7 +89,7 @@ def _run_daphne(appname, bind, **kwargs):
     kwargs.setdefault("verbosity", 0)
 
     args = [f"--{key.replace('_', '-')}={val!s}" for key, val in kwargs.items()]
-    return CommandLineInterface().run(args + [appname])
+    return CommandLineInterface().run([*args, appname])
 
 
 SERVERS = {"hypercorn": _run_hypercorn, "uvicorn": _run_uvicorn, "daphne": _run_daphne}

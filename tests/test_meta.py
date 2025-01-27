@@ -30,7 +30,7 @@ def test_namespace():
 def test_newlines():
     # Let's be a bit pedantic about sanitizing whitespace :)
 
-    for root, dirs, files in os.walk(os.path.dirname(os.path.abspath(__file__))):
+    for root, _dirs, files in os.walk(os.path.dirname(os.path.abspath(__file__))):
         for fname in files:
             if fname.endswith((".py", ".md", ".rst", ".yml")):
                 with open(os.path.join(root, fname), "rb") as f:

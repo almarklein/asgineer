@@ -86,7 +86,7 @@ async def error1(request):
     """Handler with a deliberate error."""
 
     def foo():
-        1 / 0
+        1 / 0  # noqa
 
     foo()
 
@@ -106,7 +106,7 @@ async def chunks(request):
     async def iter():
         yield "<html><head></head><body>"
         yield "Here are some chunks dripping in:<br>"
-        for i in range(20):
+        for _ in range(20):
             await asgineer.sleep(0.1)
             yield "CHUNK <br>"
         yield "</body></html>"
