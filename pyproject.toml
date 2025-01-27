@@ -15,7 +15,7 @@ dependencies = []
 lint = ["ruff"]
 docs = ["sphinx>7.2", "sphinx_rtd_theme"]
 tests = ["pytest", "pytest-cov", "requests", "websockets", "uvicorn", "hypercorn", "daphne"]
-dev = ["asgineer[lint,docs,tests]", "invoke"]
+dev = ["asgineer[lint,docs,tests]"]
 
 [project.urls]
 Homepage = "https://github.com/almarklein/asgineer"
