@@ -316,7 +316,7 @@ class ProcessTestServer(BaseTestServer):
 
         try:
             ws = await websockets.connect(url)
-        except websockets.InvalidStatusCode:
+        except (websockets.InvalidStatus, websockets.InvalidStatusCode):
             return None
         ws.receive = ws.recv
         res = await client_co_func(ws)
