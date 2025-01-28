@@ -7,7 +7,6 @@ import asgineer
 
 @asgineer.to_asgi
 async def main(request):
-
     lines = [
         "<!DOCTYPE html><html><meta><meta charset='UTF-8'></meta><body>",
         f"<h2>request.method</h2>{request.method}",

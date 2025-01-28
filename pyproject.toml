@@ -12,10 +12,10 @@ requires-python = ">= 3.8"
 dependencies = []
 
 [project.optional-dependencies]
-lint = ["black", "flake8"]
+lint = ["ruff"]
 docs = ["sphinx>7.2", "sphinx_rtd_theme"]
 tests = ["pytest", "pytest-cov", "requests", "websockets", "uvicorn", "hypercorn", "daphne"]
-dev = ["pygfx[lint,docs,tests]", "invoke"]
+dev = ["asgineer[lint,docs,tests]"]
 
 [project.urls]
 Homepage = "https://github.com/almarklein/asgineer"
@@ -32,3 +32,14 @@ Repository = "https://github.com/almarklein/asgineer"
 [build-system]
 requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
+
+# ===== Tooling
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "B", "RUF"]
+ignore = [
+    "E501",  # Line too long
+]

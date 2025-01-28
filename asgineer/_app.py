@@ -92,7 +92,6 @@ def to_asgi(handler):
 
 
 async def asgineer_application(handler, scope, receive, send):
-
     # server_version = scope["asgi"].get("version", "2.0")
     # spec_version = scope["asgi"].get("spec_version", "2.0")
 
@@ -133,9 +132,7 @@ async def _handle_lifespan(receive, send):
 
 
 async def _handle_http(handler, request):
-
     try:
-
         # Call request handler to get the result
         where = "request handler"
         result = await handler(request)
@@ -169,7 +166,7 @@ async def _handle_http(handler, request):
                 try:
                     body = json.dumps(body).encode()
                 except Exception as err:
-                    raise ValueError(f"Could not JSON encode body: {err}")
+                    raise ValueError(f"Could not JSON encode body: {err}") from None
             elif inspect.isasyncgen(body):
                 # Returning an async generator used to be THE way to do chunked
                 # responses before version 0.8. We keep it for backwards
@@ -221,7 +218,7 @@ async def _handle_http(handler, request):
 
     except Exception as err:
         # Process errors. We log them, and if possible send a 500
-        error_text = f"{type(err).__name__} in {where}: {str(err)}"
+        error_text = f"{type(err).__name__} in {where}: {err!s}"
         logger.error(error_text, exc_info=err)
         if request._app_state == _request.CONNECTING:
             await request.accept(500, {})
@@ -230,18 +227,15 @@ async def _handle_http(handler, request):
             await request.send(b"", more=False)  # At least close it
 
     finally:
-
         # Clean up
         try:
             await request._destroy()
         except Exception as err:  # pragma: no cover
-            logger.error(f"Error in cleanup: {str(err)}", exc_info=err)
+            logger.error(f"Error in cleanup: {err!s}", exc_info=err)
 
 
 async def _handle_websocket(handler, request):
-
     try:
-
         result = await handler(request)
 
         if result is not None:
@@ -255,11 +249,10 @@ async def _handle_websocket(handler, request):
         pass  # Not really an error
 
     except Exception as err:
-        error_text = f"{type(err).__name__} in websocket handler: {str(err)}"
+        error_text = f"{type(err).__name__} in websocket handler: {err!s}"
         logger.error(error_text, exc_info=err)
 
     finally:
-
         # The ASGI spec specifies that ASGI servers should close the
         # ws connection when the task ends. At the time of writing
         # (04-10-2018), only Uvicorn does this. And at 18-08-2020 Daphne
@@ -273,4 +266,4 @@ async def _handle_websocket(handler, request):
         try:
             await request._destroy()
         except Exception as err:  # pragma: no cover
-            logger.error(f"Error in ws cleanup: {str(err)}", exc_info=err)
+            logger.error(f"Error in ws cleanup: {err!s}", exc_info=err)

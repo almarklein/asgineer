@@ -28,7 +28,7 @@ class BaseRequest:
     the request metadata.
     """
 
-    __slots__ = ("__weakref__", "_scope", "_headers", "_querylist", "_request_sets")
+    __slots__ = ("__weakref__", "_headers", "_querylist", "_request_sets", "_scope")
 
     def __init__(self, scope):
         self._scope = scope
@@ -125,11 +125,11 @@ class HttpRequest(BaseRequest):
     """
 
     __slots__ = (
-        "_receive",
-        "_send",
-        "_client_state",
         "_app_state",
         "_body",
+        "_client_state",
+        "_receive",
+        "_send",
         "_wakeup_event",
     )
 
@@ -142,7 +142,7 @@ class HttpRequest(BaseRequest):
         self._body = None
         self._wakeup_event = None
 
-    async def accept(self, status=200, headers={}):
+    async def accept(self, status=200, headers=None):
         """Accept this http request. Sends the status code and headers.
 
         In Asgineer, a response can be provided in two ways. The simpler
@@ -160,6 +160,7 @@ class HttpRequest(BaseRequest):
         set "transfer-encoding" to "chunked" if "content-length" is not
         specified.)
         """
+        headers = {} if headers is None else headers
         # Check status
         if self._app_state != CONNECTING:
             raise IOError("Cannot accept an already accepted connection.")
@@ -168,7 +169,7 @@ class HttpRequest(BaseRequest):
         try:
             rawheaders = [(k.encode(), v.encode()) for k, v in headers.items()]
         except Exception:
-            raise TypeError("Header keys and values must all be strings.")
+            raise TypeError("Header keys and values must all be strings.") from None
         # Send our first message
         self._app_state = CONNECTED
         msg = {"type": "http.response.start", "status": status, "headers": rawheaders}
@@ -298,7 +299,7 @@ class WebsocketRequest(BaseRequest):
     object of this class is passed to the request handler.
     """
 
-    __slots__ = ("_receive", "_send", "_client_state", "_app_state")
+    __slots__ = ("_app_state", "_client_state", "_receive", "_send")
 
     def __init__(self, scope, receive, send):
         assert scope["type"] == "websocket", f"Unexpected ws scope type {scope['type']}"

@@ -14,7 +14,6 @@ uncompressable_data = bytes([int(random.uniform(0, 255)) for i in range(1000)])
 
 
 def test_make_asset_handler_fails():
-
     if get_backend() != "mock":
         skip("Can only test this with mock server")
 
@@ -25,7 +24,6 @@ def test_make_asset_handler_fails():
 
 
 def test_make_asset_handler():
-
     if get_backend() != "mock":
         skip("Can only test this with mock server")
 

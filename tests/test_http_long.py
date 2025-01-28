@@ -59,7 +59,6 @@ def test_stream3():
     assert not p.out
 
     if get_backend() == "mock":
-
         # The mock server will close the connection directly when we do not
         # use GET. So we can test that kind of behavior.
         with make_server(stream_handler) as p:
@@ -101,7 +100,7 @@ def test_stream5():
         await request.accept(200, sse_headers)
         for i in range(10):
             await request.sleep_while_connected(0.1)
-            await request.send(f"event: message\ndata:{str(i)}\n\n")
+            await request.send(f"event: message\ndata:{i!s}\n\n")
 
     with make_server(stream_handler) as p:
         res = p.get("/")
@@ -111,7 +110,6 @@ def test_stream5():
 
 
 def test_stream_wakeup():
-
     # This tests that the request object has a wakeup (async) method.
     # And that the signal is reset when sleep_while_connected() is entered.
 
@@ -158,7 +156,6 @@ def test_evil_handler():
 
 
 def test_request_set():
-
     loop = asyncio.get_event_loop()
 
     s1 = asgineer.RequestSet()

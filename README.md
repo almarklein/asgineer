@@ -62,11 +62,9 @@ needs an ASGI server to run on, like
 
 Install with `pip install -e .[dev]`.
 
-Run `invoke -l` to get a list of dev commands, e.g.:
-
-* `invoke autoformat` to apply Black code formatting.
-* `invoke lint` to test for unused imports and more.
-* `invoke tests` to run the tests, optionally set the `ASGI_SERVER` environment variable.
+* `ruff format` to apply code formatting.
+* `ruff check` to test for unused imports and more.
+* `pytest tests` to run the tests, optionally set the `ASGI_SERVER` environment variable.
 
 
 ## License

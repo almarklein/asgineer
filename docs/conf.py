@@ -15,9 +15,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asgineer
 
+
 # -- General configuration ------------------------------------------------
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "sphinx_rtd_theme",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -26,12 +31,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "Asgineer"
-copyright = "2018-2024, Almar Klein"
+copyright = "2018-2025, Almar Klein"
 author = "Almar Klein"
-
-# The short X.Y version.
-version = ".".join(asgineer.__version__.split(".")[:2])
-# The full version, including alpha/beta/rc tags.
 release = asgineer.__version__
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
@@ -40,8 +41,10 @@ todo_include_todos = False
 
 # -- Options for HTML output ----------------------------------------------
 
-if not (os.getenv("READTHEDOCS") or os.getenv("CI")):
-    html_theme = "sphinx_rtd_theme"
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+#
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

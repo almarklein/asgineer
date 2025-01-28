@@ -31,7 +31,6 @@ async def handler(request):
 
 
 def test_invalid_scope_types():
-
     # All scope valid scope types are tested in other tests. Only test invalid here.
 
     app = asgineer.to_asgi(handler)
@@ -46,7 +45,6 @@ def test_invalid_scope_types():
 
 
 def test_lifespan():
-
     app = asgineer.to_asgi(handler)
 
     scope = {"type": "lifespan"}

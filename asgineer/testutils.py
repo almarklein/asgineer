@@ -80,7 +80,7 @@ class BaseTestServer:
 
         self._start_server()
 
-        self.log(f" {time.time()-t0:0.1f}s ", end="")
+        self.log(f" {time.time() - t0:0.1f}s ", end="")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -91,7 +91,7 @@ class BaseTestServer:
         self._out = "\n".join(self.filter_lines(out.splitlines()))
 
         if exc_value is None:
-            self.log(f" {time.time()-t0:0.1f}s ")
+            self.log(f" {time.time() - t0:0.1f}s ")
         else:
             self.log("Process output:")
             self.log(self.out)
@@ -287,7 +287,7 @@ class ProcessTestServer(BaseTestServer):
         # Ask process to stop
         self._delfile()
         # Force it to stop if needed
-        for i in range(5):
+        for _ in range(5):
             etime = time.time() + 5
             while self._p.poll() is None and time.time() < etime:
                 time.sleep(0.01)
@@ -511,7 +511,6 @@ class MockTestServer(BaseTestServer):
         return tuple(response)
 
     async def _co_ws_communicate(self, url, client_co_func, loop):
-
         req = requests.Request("GET", url)
         p = req.prepare()  # Get the "resolved" request
         p.headers.setdefault("user-agent", "asgi_mock_server")

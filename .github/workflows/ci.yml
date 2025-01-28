@@ -13,29 +13,29 @@ on:
 jobs:
 
   lint-build:
-    name: Linting
+    name: Lint
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
-    - name: Install dev dependencies
-      run: |
-          python -m pip install --upgrade pip
-          pip install -U black pyflakes
-    - name: Black
-      run: |
-          black --check .
-    - name: Flake
-      run: |
-          pyflakes .
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Install dependencies
+        run: |
+              python -m pip install --upgrade pip
+              pip install ruff
+      - name: Ruff lint
+        run: |
+              ruff check --output-format=github .
+      - name: Ruff format
+        run: |
+             ruff format --check .
 
   docs-build:
-    name: Docs
+    name: Test Docs
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,14 +44,15 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.12
+        python-version: '3.12'
     - name: Install dev dependencies
       run: |
           python -m pip install --upgrade pip
-          pip install -U sphinx
+          pip install -U -e .[docs]
     - name: Build docs
       run: |
-          sphinx-build docs docs/_build;
+          cd docs
+          make html SPHINXOPTS="-W --keep-going"
 
   test-builds:
     name: ${{ matrix.name }}

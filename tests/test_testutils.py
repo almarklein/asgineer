@@ -30,8 +30,7 @@ def test_http():
     async def handler4(request):
         return await handler1(request)
 
-    app3 = asgineer.to_asgi(handler3)
-    app3
+    _app3 = asgineer.to_asgi(handler3)
 
     with make_server(handler1) as p:
         assert p.get("").body == b"hellow1"

@@ -12,14 +12,14 @@ from .utils import sleep
 
 __all__ = [
     "BaseRequest",
-    "HttpRequest",
-    "WebsocketRequest",
-    "RequestSet",
     "DisconnectedError",
-    "to_asgi",
+    "HttpRequest",
+    "RequestSet",
+    "WebsocketRequest",
     "run",
-    "utils",
     "sleep",
+    "to_asgi",
+    "utils",
 ]
 
 
