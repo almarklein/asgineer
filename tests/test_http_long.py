@@ -156,7 +156,7 @@ def test_evil_handler():
 
 
 def test_request_set():
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
 
     s1 = asgineer.RequestSet()
     r1 = asgineer.BaseRequest(None)

@@ -36,7 +36,7 @@ def test_invalid_scope_types():
     app = asgineer.to_asgi(handler)
 
     scope = {"type": "notaknownscope"}
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     with LogCapturer() as cap:
         loop.run_until_complete(app(scope, None, None))
 
@@ -48,7 +48,7 @@ def test_lifespan():
     app = asgineer.to_asgi(handler)
 
     scope = {"type": "lifespan"}
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
 
     lifespan_messages = [
         {"type": "lifespan.startup"},
