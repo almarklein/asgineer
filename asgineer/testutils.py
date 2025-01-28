@@ -50,7 +50,7 @@ class BaseTestServer:
     def __init__(self, app, server_description, *, loop=None):
         self._app = app
         self._server = server_description
-        self._loop = asyncio.get_event_loop() if loop is None else loop
+        self._loop = asyncio.new_event_loop() if loop is None else loop
         self._out = ""
         # Get stdout funcs because the mock server hijacks them
         self._stdout_write = sys.stdout.write
@@ -144,7 +144,7 @@ class BaseTestServer:
         """
         url = self.url.replace("http", "ws") + "/" + path.lstrip("/")
         if loop is None:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.new_event_loop()
         co = self._co_ws_communicate(url, client_co_func, loop)
         return loop.run_until_complete(co)
 
@@ -316,7 +316,7 @@ class ProcessTestServer(BaseTestServer):
 
         try:
             ws = await websockets.connect(url)
-        except websockets.InvalidStatusCode:
+        except (websockets.InvalidStatus, websockets.InvalidStatusCode):
             return None
         ws.receive = ws.recv
         res = await client_co_func(ws)
