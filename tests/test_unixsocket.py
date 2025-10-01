@@ -21,9 +21,9 @@ def test_unixsocket():
         code_to_run = "\n".join(
             [
                 "# this allows us not to install asgineer and still import it",
-                "import importlib",
+                "from importlib.util import spec_from_file_location",
                 "import sys",
-                f"spec = importlib.util.spec_from_file_location('asgineer', '{project_location}/asgineer/__init__.py')",
+                f"spec = spec_from_file_location('asgineer', '{project_location}/asgineer/__init__.py')",
                 "module = importlib.util.module_from_spec(spec)",
                 "sys.modules[spec.name] = module ",
                 "spec.loader.exec_module(module)",
