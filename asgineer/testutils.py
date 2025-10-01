@@ -408,7 +408,7 @@ class MockTestServer(BaseTestServer):
         self._loop.run_until_complete(waiter())
 
     def _make_scope(self, request):
-        scheme, netloc, path, params, query, fragement = urlparse(request.url)
+        scheme, netloc, path, _params, query, _fragment = urlparse(request.url)
         if ":" in netloc:
             host, port = netloc.split(":", 1)
             port = int(port)

@@ -9,6 +9,7 @@ import mimetypes
 from ._app import normalize_response, guess_content_type_from_body
 from ._compat import sleep
 
+
 __all__ = [
     "guess_content_type_from_body",
     "make_asset_handler",
@@ -20,8 +21,8 @@ VIDEO_EXTENSIONS = ".mp4", ".3gp", ".webm"
 
 
 def make_asset_handler(assets, max_age=0, min_compress_size=256):
-    """
-    Get a coroutine function for efficiently serving in-memory assets.
+    """Get a coroutine function for efficiently serving in-memory assets.
+
     The resulting handler functon takes care of setting the appropriate
     content-type header, sending compressed responses when
     possible/sensible, and applying appropriate HTTP caching (using

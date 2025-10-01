@@ -26,6 +26,6 @@ async def wait_for_any_then_cancel_the_rest(*coroutines):
     # Note: ensure_future == create_task. Less readable, but py36 compatible.
     if True:  # if asyncio
         tasks = [asyncio.ensure_future(co) for co in coroutines]
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        _done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
