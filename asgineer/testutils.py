@@ -192,14 +192,14 @@ if __name__ == "__main__":
 """
 
 LOAD_MODULE_CODE = """
-import importlib
+from importlib.util import spec_from_file_location
 def load_module(name, filename):
     assert filename.endswith('.py')
     if name in sys.modules:
         return sys.modules[name]
     if '.' in name:
         load_module(name.rsplit('.', 1)[0], os.path.join(os.path.dirname(filename), '__init__.py'))
-    spec = importlib.util.spec_from_file_location(name, filename)
+    spec = spec_from_file_location(name, filename)
     return spec.loader.load_module()
 """
 
