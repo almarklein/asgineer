@@ -48,6 +48,7 @@ def normalize_response(response):
     if not isinstance(headers, dict):
         raise ValueError(f"Headers must be a dict, not {type(headers)}")
 
+    headers = {k.lower(): v for k, v in headers.items()}
     return status, headers, body
 
 

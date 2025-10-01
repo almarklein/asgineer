@@ -199,6 +199,20 @@ def test_body_types():
     assert "foo" in res.body.decode()
     assert not p.out
 
+    # Explicit content type
+
+    async def handler_explicit_content_type(request):
+        return 200, {"Content-Type": "text/plain"}, b"hello, world"
+
+    with make_server(handler_explicit_content_type) as p:
+        res = p.get("/")
+
+    assert res.status == 200
+    assert res.headers["content-type"] == "text/plain"
+    assert "Content-Type" not in res.headers
+    assert "hello, world" == res.body.decode()
+    assert not p.out
+
 
 ## Chunking
 
