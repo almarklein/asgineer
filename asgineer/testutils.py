@@ -309,7 +309,11 @@ class ProcessTestServer(BaseTestServer):
 
     async def _co_request(self, method, url, **kwargs):
         r = requests.request(method, url, **kwargs)
-        return r.status_code, r.headers, r.content
+        # `requests` conveniently presents headers in a `CaseInsensitiveDict`, which is great for
+        # normal usage, but for consistency with MockTestServer, we convert this to a regular dict
+        # with lowercase keys.
+        case_sensitive_headers = {k.lower(): v for k, v in r.headers.items()}
+        return r.status_code, case_sensitive_headers, r.content
 
     async def _co_ws_communicate(self, url, client_co_func, loop):
         import websockets
